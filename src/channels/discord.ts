@@ -18,7 +18,9 @@ const proxyUrl =
   process.env.HTTPS_PROXY ||
   process.env.http_proxy ||
   process.env.HTTP_PROXY;
-const discordProxyAgent = proxyUrl ? new ProxyAgent({ uri: proxyUrl }) : undefined;
+const discordProxyAgent = proxyUrl
+  ? new ProxyAgent({ uri: proxyUrl })
+  : undefined;
 import {
   Channel,
   OnChatMetadata,
