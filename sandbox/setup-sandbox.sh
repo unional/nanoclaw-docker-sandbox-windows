@@ -8,7 +8,14 @@
 
 set -euo pipefail
 
-WORKSPACE="${HOME}/nanoclaw-workspace"
+# WSL: Docker Desktop can't see WSL filesystem (/home/...).
+# Use Windows user profile path so Docker can mount the workspace.
+if grep -qi microsoft /proc/version 2>/dev/null; then
+  WIN_USER=$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r\n')
+  WORKSPACE="/mnt/c/Users/${WIN_USER}/nanoclaw-workspace"
+else
+  WORKSPACE="${HOME}/nanoclaw-workspace"
+fi
 SANDBOX_NAME="claude-nanoclaw-workspace"
 REPO_URL="https://github.com/gabi-simons/nanoclaw.git"
 REPO_BRANCH="feature/sandbox-setup-script"
