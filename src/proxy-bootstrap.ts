@@ -53,9 +53,7 @@ if (proxyUrl) {
 
   // Layer 2: Node's built-in fetch (undici)
   try {
-    const mod = await (Function(
-      'return import("undici")',
-    )() as Promise<any>);
+    const mod = await (Function('return import("undici")')() as Promise<any>);
     const opts: any = { uri: proxyUrl };
     if (ca) opts.requestTls = { ca };
     mod.setGlobalDispatcher(new mod.ProxyAgent(opts));
