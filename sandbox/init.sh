@@ -42,7 +42,12 @@ echo "  done"
 
 # ── 3. Apply sandbox patches ────────────────────────────────────
 echo "[3/4] Applying sandbox patches..."
-sed -i 's/\r$//' sandbox/sandbox-patch.sh 2>/dev/null || true
+# Fix CRLF line endings (sed -i fails on virtiofs, use temp file + mv)
+for f in sandbox/*.sh container/build.sh; do
+  if [ -f "$f" ]; then
+    tr -d '\r' < "$f" > /tmp/_fixcrlf && mv /tmp/_fixcrlf "$f" && chmod +x "$f"
+  fi
+done
 bash sandbox/sandbox-patch.sh 2>&1 | grep -E "\[ok\]|\[--\]|=== Done" || true
 echo "  done"
 

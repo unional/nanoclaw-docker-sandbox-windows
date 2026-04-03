@@ -15,6 +15,13 @@
 
 set -e
 
+# virtiofs-safe sed -i replacement (sed -i fails on virtiofs shared mounts)
+sedi() {
+  local file="${@: -1}"
+  local args=("${@:1:$#-1}")
+  sed "${args[@]}" "$file" > /tmp/_sedi_tmp && mv /tmp/_sedi_tmp "$file"
+}
+
 # Resolve project root (script may live in sandbox/ or be copied to workspace root)
 if [ -f "package.json" ]; then
   PROJECT_ROOT="$(pwd)"
@@ -43,7 +50,7 @@ if [ -f container/Dockerfile ]; then
   if grep -q "strict-ssl" container/Dockerfile; then
     skipped "Dockerfile strict-ssl"
   else
-    sed -i '1,/^RUN npm install -g/{
+    sedi '1,/^RUN npm install -g/{
       /^RUN npm install -g/i\
 ARG http_proxy\
 ARG https_proxy\
@@ -62,12 +69,12 @@ if [ -f container/build.sh ]; then
   if grep -q "build-arg" container/build.sh; then
     skipped "build.sh proxy args"
   else
-    sed -i '/\${CONTAINER_RUNTIME} build/i\
+    sedi '/\${CONTAINER_RUNTIME} build/i\
 # Sandbox: forward proxy env vars to docker build\
 BUILD_ARGS=""\
 [ -n "$http_proxy" ] && BUILD_ARGS="$BUILD_ARGS --build-arg http_proxy=$http_proxy"\
 [ -n "$https_proxy" ] && BUILD_ARGS="$BUILD_ARGS --build-arg https_proxy=$https_proxy"' container/build.sh
-    sed -i 's|\${CONTAINER_RUNTIME} build -t|${CONTAINER_RUNTIME} build ${BUILD_ARGS} -t|' container/build.sh
+    sedi 's|\${CONTAINER_RUNTIME} build -t|${CONTAINER_RUNTIME} build ${BUILD_ARGS} -t|' container/build.sh
     applied "build.sh proxy args"
   fi
 else
