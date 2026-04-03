@@ -43,6 +43,9 @@ for f in container/build.sh setup.sh; do
 done
 npm install 2>&1 | tail -1
 npm install https-proxy-agent undici 2>&1 | tail -1
+# Commit sandbox-only deps so channel merges don't hit dirty working tree
+git add package.json package-lock.json 2>/dev/null
+git diff --cached --quiet || git commit -m "chore: add sandbox proxy dependencies" --no-verify 2>&1 | tail -1
 echo "  done"
 
 # ── 3. Build NanoClaw + agent container ─────────────────────────
