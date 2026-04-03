@@ -162,46 +162,15 @@ AskUserQuestion: "How do you want to authenticate?"
 
 ### If Anthropic API key:
 
-AskUserQuestion: "Do you already have an Anthropic API key? If not, go to https://console.anthropic.com → API Keys → Create Key. The key starts with `sk-ant-...`"
+AskUserQuestion: "Do you have an Anthropic API key? If not, go to https://console.anthropic.com → API Keys → Create Key (starts with `sk-ant-...`). Then paste it here or add it in Docker Desktop → Settings → AI."
 
-Then AskUserQuestion: "How do you want to use the key?"
-- **Docker Desktop managed (recommended):** The sandbox proxy injects the key automatically into API calls. More secure — key never touches NanoClaw files.
-- **Direct in .env:** Write the key directly into NanoClaw's config.
-
-**Docker Desktop managed:**
-
-Tell the user:
-1. Open **Docker Desktop** on your host machine (not inside the sandbox)
-2. Go to **Settings** (gear icon) → **AI** (or **Extensions** depending on version)
-3. Under **AI Provider Keys** or **Sandbox API Keys**, add your Anthropic API key
-4. Click **Save** / **Apply**
-
-Then verify the proxy is injecting the key by running a test API call inside the sandbox:
-
-```bash
-curl -s -X POST https://api.anthropic.com/v1/messages \
-  -H "x-api-key: proxy-managed" \
-  -H "anthropic-version: 2023-06-01" \
-  -H "content-type: application/json" \
-  -d '{"model":"claude-sonnet-4-20250514","max_tokens":10,"messages":[{"role":"user","content":"hi"}]}' \
-  | head -c 200
-```
-
-If the response contains valid JSON with `"content"` → the proxy is working. Tell the user: "API key verified — the sandbox proxy is injecting your key correctly."
-
-If the response contains `"authentication_error"` → the API key is not configured in Docker Desktop yet, or Docker Desktop needs a restart. Ask the user to check and retry.
-
-After verification, write `ANTHROPIC_API_KEY=proxy-managed` and `ASSISTANT_NAME=nanoclaw` to `.env`. Copy to `data/env/env` (`mkdir -p data/env && cp .env data/env/env`).
+**Docker Desktop managed:** Tell user to open Docker Desktop → Settings → AI → add the key. Write `ANTHROPIC_API_KEY=proxy-managed` and `ASSISTANT_NAME=nanoclaw` to `.env`. Copy to `data/env/env` (`mkdir -p data/env && cp .env data/env/env`).
 
 **Direct in .env:** AskUserQuestion for the key. Write `ANTHROPIC_API_KEY=<key>` and `ASSISTANT_NAME=nanoclaw` to `.env`. Copy to `data/env/env`.
 
 ### If Claude subscription (Pro/Max):
 
-Tell the user: "You can use your Claude subscription instead of an API key. Run `claude setup-token` in the sandbox terminal to get an OAuth token, then add `CLAUDE_CODE_OAUTH_TOKEN=<token>` to `.env`."
-
-Write `CLAUDE_CODE_OAUTH_TOKEN=<token>` and `ASSISTANT_NAME=nanoclaw` to `.env`. Copy to `data/env/env`.
-
-Note: The Docker Desktop proxy does NOT work with OAuth tokens — only API keys. With OAuth, the token is stored directly in `.env`.
+Tell user to run `claude setup-token` to get an OAuth token. Write `CLAUDE_CODE_OAUTH_TOKEN=<token>` and `ASSISTANT_NAME=nanoclaw` to `.env`. Copy to `data/env/env`.
 
 **If IS_SANDBOX=false (normal setup):**
 
