@@ -3,10 +3,12 @@
  *
  * Import this module early in the process (before any HTTP calls) to route
  * ALL outbound requests through the sandbox MITM proxy. This eliminates the
- * need for per-library proxy configuration (Grammy, Baileys, Claude SDK, etc.).
+ * need for per-library proxy configuration in most cases.
  *
  * Two layers are patched:
  *   1. https.globalAgent → HttpsProxyAgent  (covers node-fetch, axios, etc.)
+ *      Libraries that create their own agent (e.g. Grammy) must be configured
+ *      to use https.globalAgent instead — see telegram.ts baseFetchConfig.
  *   2. undici global dispatcher → ProxyAgent (covers Node's built-in fetch)
  */
 import fs from 'fs';
@@ -32,8 +34,10 @@ if (proxyUrl) {
     }
   }
 
-  // Layer 1: node-fetch and any library using https.request / https.globalAgent
-  // Grammy, Baileys, and most npm HTTP libraries respect https.globalAgent.
+  // Layer 1: Set https.globalAgent to proxy agent.
+  // Covers node-fetch, axios, and any library that doesn't override the agent.
+  // Libraries like Grammy that create their own agent need to be configured
+  // to use https.globalAgent explicitly (e.g. baseFetchConfig: { agent: https.globalAgent }).
   try {
     const mod = await (Function(
       'return import("https-proxy-agent")',
