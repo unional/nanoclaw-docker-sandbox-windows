@@ -56,19 +56,6 @@ else
   git clone -b "$REPO_BRANCH" "$REPO_URL" "$WORKSPACE" </dev/null
 fi
 
-# ── Collect API key ────────────────────────────────────────────────
-if [ -f "${WORKSPACE}/.env" ] && grep -q "ANTHROPIC_API_KEY" "${WORKSPACE}/.env" 2>/dev/null; then
-  echo "API key already configured."
-else
-  echo ""
-  echo "You need an Anthropic API key to run NanoClaw."
-  echo "Get one at: https://console.anthropic.com/settings/keys"
-  echo ""
-  read -p "Paste your API key (sk-ant-...): " API_KEY </dev/tty
-  echo "ANTHROPIC_API_KEY=${API_KEY}" > "${WORKSPACE}/.env"
-  echo "API key saved."
-fi
-
 # ── Create sandbox using Claude agent type ─────────────────────────
 echo "Creating sandbox..."
 echo y | docker sandbox create claude "$DOCKER_WORKSPACE"
