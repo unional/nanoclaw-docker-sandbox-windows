@@ -11,7 +11,7 @@ set -euo pipefail
 # WSL: Docker Desktop can't see WSL filesystem (/home/...).
 # Use Windows user profile path so Docker can mount the workspace.
 if grep -qi microsoft /proc/version 2>/dev/null; then
-  WIN_USER=$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r\n')
+  WIN_USER=$(cmd.exe /c "echo %USERNAME%" </dev/null 2>/dev/null | tr -d '\r\n')
   WORKSPACE="/mnt/c/Users/${WIN_USER}/nanoclaw-workspace"
 else
   WORKSPACE="${HOME}/nanoclaw-workspace"
