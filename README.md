@@ -57,21 +57,15 @@ Then run:
 curl -fsSL https://raw.githubusercontent.com/qwibitai/nanoclaw/main/sandbox/setup-sandbox.sh | bash
 ```
 
-When the script finishes, enter the sandbox and initialize:
+When the script finishes, enter the sandbox and run `/setup`:
 
 ```bash
-docker sandbox run shell-nanoclaw-workspace
-# Inside the sandbox:
-bash $(df -h | grep virtiofs | awk '{print $NF}')/nanoclaw/sandbox/init.sh
-```
-
-Then start Claude Code and run `/setup`:
-
-```bash
-cd $(cat ~/.nanoclaw-workspace)/nanoclaw
-claude
+docker sandbox run claude-nanoclaw-workspace
+# Inside the sandbox, type:
 /setup
 ```
+
+`/setup` auto-detects the sandbox environment, installs dependencies, applies patches, builds NanoClaw, and walks through channel configuration.
 
 ## Philosophy
 
