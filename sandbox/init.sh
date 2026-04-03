@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# init.sh — Initialize NanoClaw inside a Docker Sandbox.
-# The repo is already mounted in the workspace (cloned on host).
+# init.sh — Sandbox-specific prep for NanoClaw inside a Docker Sandbox.
+# Only does what /setup can't: proxy config, CRLF fixes, proxy packages.
+# The /setup skill handles build, container, and everything else.
 
 set -euo pipefail
 
@@ -19,8 +20,8 @@ fi
 cd "$NANOCLAW_DIR"
 echo "$NANOCLAW_DIR" > /home/agent/.nanoclaw-workspace
 
-# ── 1. System dependencies ──────────────────────────────────────
-echo "[1/3] Installing system dependencies..."
+# ── 1. Sandbox-specific system prep ──────────────────────────────
+echo "[1/3] Configuring sandbox environment..."
 sudo apt-get update -qq >/dev/null 2>&1
 sudo apt-get install -y -qq build-essential >/dev/null 2>&1
 npm config set strict-ssl false
@@ -33,8 +34,8 @@ if [ -f /usr/local/share/ca-certificates/proxy-ca.crt ]; then
 fi
 echo "  done"
 
-# ── 2. Install npm dependencies ─────────────────────────────────
-echo "[2/3] Installing npm dependencies..."
+# ── 2. Fix CRLF + install deps (with proxy packages) ─────────────
+echo "[2/3] Installing dependencies..."
 # Fix CRLF line endings from Windows host clone
 for f in container/build.sh setup.sh; do
   if [ -f "$f" ]; then
@@ -43,23 +44,20 @@ for f in container/build.sh setup.sh; do
 done
 npm install 2>&1 | tail -1
 npm install https-proxy-agent undici 2>&1 | tail -1
-# Commit sandbox-only deps so channel merges don't hit dirty working tree
-git add package.json package-lock.json 2>/dev/null
-git diff --cached --quiet || git commit -m "chore: add sandbox proxy dependencies" --no-verify 2>&1 | tail -1
 echo "  done"
 
-# ── 3. Build NanoClaw + agent container ─────────────────────────
-echo "[3/3] Building NanoClaw..."
-npm run build 2>&1 | tail -1
-bash container/build.sh 2>&1 | tail -3
+# ── 3. Commit sandbox deps so channel merges have clean tree ─────
+echo "[3/3] Committing sandbox dependencies..."
+git add package.json package-lock.json 2>/dev/null
+git diff --cached --quiet || git commit -m "chore: add sandbox proxy dependencies" --no-verify 2>&1 | tail -1
 echo "  done"
 
 touch /home/agent/.nanoclaw-initialized
 
 echo ""
 echo "========================================="
-echo "  NanoClaw is ready!"
+echo "  Sandbox prep complete!"
 echo "========================================="
 echo ""
-echo "Type /setup to continue configuration."
+echo "Type /setup to continue (builds, container, channels)."
 echo ""
