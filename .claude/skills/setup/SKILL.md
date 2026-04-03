@@ -72,7 +72,9 @@ Already configured. Continue.
 
 ## 1. Bootstrap (Node.js + Dependencies)
 
-Run `bash setup.sh` and parse the status block.
+**If sandbox init already ran** (`test -f "$HOME/.nanoclaw-initialized"`): skip this step entirely — `init.sh` already installed Node dependencies, build tools, and native modules. Jump to step 2.
+
+**Otherwise:** Run `bash setup.sh` and parse the status block.
 
 - If NODE_OK=false → Node.js is missing or too old. Use `AskUserQuestion: Would you like me to install Node.js 22?` If confirmed:
   - macOS: `brew install node@22` (if brew available) or install nvm then `nvm install 22`
