@@ -1,6 +1,10 @@
 #!/bin/bash
-# sandbox-patch.sh — Patches NanoClaw source for Docker Sandbox proxy/DinD compatibility.
+# sandbox-patch.sh — Patches NanoClaw for Docker Sandbox proxy/DinD compatibility.
 # Idempotent: safe to run multiple times. Run from the NanoClaw project root.
+#
+# These are environment-specific patches that adapt NanoClaw to the sandbox
+# proxy and DinD networking. Core sandbox logic (IS_SANDBOX detection,
+# sandboxRunContainerAgent, single-turn mode) lives in source code.
 #
 # Patches applied:
 #   1. Dockerfile: npm strict-ssl + proxy ARGs
@@ -9,9 +13,10 @@
 #   4. container-runner.ts: replace /dev/null shadow mount with .env.empty
 #   5. container-runner.ts: mount proxy CA cert into agent containers
 #   6. setup/container.ts: proxy build args
+#   7. channels/telegram.ts: HttpsProxyAgent for grammy (if installed)
 #
-# Telegram and WhatsApp networking is handled by the Docker Sandbox plugin
-# (docker-plugin/network.json bypassDomains) — no code patches needed.
+# WhatsApp networking is handled by Docker Sandbox proxy bypass
+# (docker sandbox network proxy --bypass-host) — no code patches needed.
 
 set -e
 
@@ -45,7 +50,7 @@ echo "Project root: $PROJECT_ROOT"
 echo ""
 
 # ---- Patch 1: Dockerfile npm strict-ssl + proxy ARGs ----
-echo "[1/6] Dockerfile: npm strict-ssl + proxy ARGs"
+echo "[1/7] Dockerfile: npm strict-ssl + proxy ARGs"
 if [ -f container/Dockerfile ]; then
   if grep -q "strict-ssl" container/Dockerfile; then
     skipped "Dockerfile strict-ssl"
@@ -64,7 +69,7 @@ else
 fi
 
 # ---- Patch 2: container/build.sh proxy build args ----
-echo "[2/6] container/build.sh: proxy build args"
+echo "[2/7] container/build.sh: proxy build args"
 if [ -f container/build.sh ]; then
   if grep -q "build-arg" container/build.sh; then
     skipped "build.sh proxy args"
@@ -81,11 +86,12 @@ else
   missing "container/build.sh"
 fi
 
-# ---- Patches 3-6: TypeScript patches via Node.js for reliability ----
-echo "[3/6] container-runner.ts: forward proxy env vars"
-echo "[4/6] container-runner.ts: replace /dev/null with .env.empty"
-echo "[5/6] container-runner.ts: mount proxy CA cert"
-echo "[6/6] setup/container.ts: proxy build args"
+# ---- Patches 3-7: TypeScript patches via Node.js for reliability ----
+echo "[3/7] container-runner.ts: forward proxy env vars"
+echo "[4/7] container-runner.ts: replace /dev/null with .env.empty"
+echo "[5/7] container-runner.ts: mount proxy CA cert"
+echo "[6/7] setup/container.ts: proxy build args"
+echo "[7/7] channels/telegram.ts: HttpsProxyAgent (if installed)"
 
 node --input-type=module << 'NODESCRIPT'
 import fs from "fs";
@@ -100,6 +106,9 @@ function patchFile(filePath, patches) {
     return;
   }
   let content = fs.readFileSync(filePath, "utf8");
+  // Normalize CRLF to LF for reliable matching (restore on write)
+  const hasCRLF = content.includes("\r\n");
+  if (hasCRLF) content = content.replace(/\r\n/g, "\n");
   let fileApplied = 0;
 
   for (const p of patches) {
@@ -141,14 +150,15 @@ function patchFile(filePath, patches) {
   }
 
   if (fileApplied > 0) {
+    if (hasCRLF) content = content.replace(/\n/g, "\r\n");
     fs.writeFileSync(filePath, content);
     console.log(`  [ok] ${filePath}: ${fileApplied} patch(es) applied`);
   }
 }
 
-// Patch 3: Forward proxy env vars to agent containers
-// Patch 4: Replace /dev/null with .env.empty
-// Patch 5: Mount proxy CA cert
+// Patch 3: Forward proxy env vars to agent containers (non-sandbox container runs)
+// Patch 4: Replace /dev/null with .env.empty (DinD rejects /dev/null mounts)
+// Patch 5: Mount proxy CA cert into agent containers
 patchFile("src/container-runner.ts", [
   {
     name: "proxy-env",
@@ -208,7 +218,32 @@ patchFile("setup/container.ts", [
   },
 ]);
 
-// Create .env.empty if it doesn't exist
+// Patch 7: Telegram HttpsProxyAgent (only if telegram channel is installed)
+// Grammy doesn't respect HTTP_PROXY env vars — needs explicit proxy agent
+patchFile("src/channels/telegram.ts", [
+  {
+    name: "telegram-proxy-import",
+    marker: "SANDBOX_PATCH_TELEGRAM_PROXY",
+    insertAfter: "import { Bot",
+    code: `// SANDBOX_PATCH_TELEGRAM_PROXY: grammy needs explicit proxy agent in sandbox
+import { HttpsProxyAgent } from 'https-proxy-agent';`,
+  },
+  {
+    name: "telegram-proxy-config",
+    marker: "SANDBOX_PATCH_TELEGRAM_BOT_CONFIG",
+    replace: {
+      from: "this.bot = new Bot(this.botToken);",
+      to: `// SANDBOX_PATCH_TELEGRAM_BOT_CONFIG: route through sandbox MITM proxy
+    const _proxyUrl = process.env.HTTPS_PROXY || process.env.https_proxy || '';
+    const _botConfig = _proxyUrl
+      ? { client: { baseFetchConfig: { agent: new HttpsProxyAgent(_proxyUrl), compress: true } } }
+      : undefined;
+    this.bot = new Bot(this.botToken, _botConfig);`,
+    },
+  },
+]);
+
+// Create .env.empty if it doesn't exist (needed for patch 4)
 if (!fs.existsSync(".env.empty")) {
   fs.writeFileSync(".env.empty", "");
   console.log("  [ok] Created .env.empty");

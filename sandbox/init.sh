@@ -31,6 +31,9 @@ if [ -n "${http_proxy:-}" ]; then
   npm config set proxy "$http_proxy"
   npm config set https-proxy "$http_proxy"
 fi
+if [ -f /usr/local/share/ca-certificates/proxy-ca.crt ]; then
+  npm config set cafile /usr/local/share/ca-certificates/proxy-ca.crt
+fi
 echo "  done"
 
 # ── 2. Install npm dependencies ─────────────────────────────────
@@ -43,7 +46,7 @@ echo "  done"
 # ── 3. Apply sandbox patches ────────────────────────────────────
 echo "[3/4] Applying sandbox patches..."
 # Fix CRLF line endings (sed -i fails on virtiofs, use temp file + mv)
-for f in sandbox/*.sh container/build.sh; do
+for f in sandbox/*.sh container/build.sh setup.sh; do
   if [ -f "$f" ]; then
     tr -d '\r' < "$f" > /tmp/_fixcrlf && mv /tmp/_fixcrlf "$f" && chmod +x "$f"
   fi

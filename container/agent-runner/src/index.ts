@@ -702,6 +702,14 @@ async function main(): Promise<void> {
         break;
       }
 
+      // Single-turn mode: exit after first query (sandbox — IPC doesn't work with tmpfs).
+      // Must use process.exit() because the Claude SDK keeps background subprocesses
+      // alive that prevent the Node.js event loop from draining naturally.
+      if (process.env.NANOCLAW_SINGLE_TURN === '1') {
+        log('Single-turn mode: exiting after first query');
+        process.exit(0);
+      }
+
       // Emit session update so host can track it
       writeOutput({ status: 'success', result: null, newSessionId: sessionId });
 

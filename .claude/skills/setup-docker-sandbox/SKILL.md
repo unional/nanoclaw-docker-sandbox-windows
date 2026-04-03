@@ -143,7 +143,7 @@ npx tsx setup/index.ts --step sandbox -- --action exec --name shell-nanoclaw-wor
 
 **Manual mode:**
 ```
-npx tsx setup/index.ts --step sandbox -- --action exec --name shell-nanoclaw-workspace --cmd "WORKSPACE=\$(cat /home/agent/.nanoclaw-workspace 2>/dev/null || df -h | grep virtiofs | awk '{print \$NF}' | head -1) && cd \"\$WORKSPACE/nanoclaw\" && npx tsx scripts/apply-skill.ts .claude/skills/add-telegram && bash sandbox/sandbox-patch.sh && npm run build"
+npx tsx setup/index.ts --step sandbox -- --action exec --name shell-nanoclaw-workspace --cmd "WORKSPACE=\$(cat /home/agent/.nanoclaw-workspace 2>/dev/null || df -h | grep virtiofs | awk '{print \$NF}' | head -1) && cd \"\$WORKSPACE/nanoclaw\" && git remote add nanoclaw-telegram https://github.com/qwibitai/nanoclaw-telegram.git 2>/dev/null; git fetch nanoclaw-telegram main && git merge nanoclaw-telegram/main --no-edit && bash sandbox/sandbox-patch.sh && npm run build"
 ```
 
 Then write .env:
@@ -162,7 +162,7 @@ Ensure proxy bypass was configured in step 3b. If not, run it now.
 
 **Apply skill and patch:**
 ```
-npx tsx setup/index.ts --step sandbox -- --action exec --name shell-nanoclaw-workspace --cmd "WORKSPACE=\$(cat /home/agent/.nanoclaw-workspace 2>/dev/null || df -h | grep virtiofs | awk '{print \$NF}' | head -1) && cd \"\$WORKSPACE/nanoclaw\" && npx tsx scripts/apply-skill.ts .claude/skills/add-whatsapp && bash sandbox/sandbox-patch.sh && npm run build"
+npx tsx setup/index.ts --step sandbox -- --action exec --name shell-nanoclaw-workspace --cmd "WORKSPACE=\$(cat /home/agent/.nanoclaw-workspace 2>/dev/null || df -h | grep virtiofs | awk '{print \$NF}' | head -1) && cd \"\$WORKSPACE/nanoclaw\" && git remote add nanoclaw-whatsapp https://github.com/qwibitai/nanoclaw-whatsapp.git 2>/dev/null; git fetch nanoclaw-whatsapp main && git merge nanoclaw-whatsapp/main --no-edit && bash sandbox/sandbox-patch.sh && npm run build"
 ```
 
 Write .env (if not already written by Telegram step):
