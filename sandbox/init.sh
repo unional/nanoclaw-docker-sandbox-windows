@@ -7,8 +7,7 @@
 
 set -euo pipefail
 
-WORKSPACE=$(df -h | grep virtiofs | head -1 | awk '{print $NF}')
-NANOCLAW_DIR="${WORKSPACE}/nanoclaw"
+NANOCLAW_DIR=$(df -h | grep virtiofs | head -1 | awk '{print $NF}')
 
 echo ""
 echo "=== NanoClaw Sandbox Init ==="
@@ -21,7 +20,7 @@ if [ ! -f "${NANOCLAW_DIR}/package.json" ]; then
 fi
 
 cd "$NANOCLAW_DIR"
-echo "$WORKSPACE" > /home/agent/.nanoclaw-workspace
+echo "$NANOCLAW_DIR" > /home/agent/.nanoclaw-workspace
 
 # ── 1. System dependencies ──────────────────────────────────────
 echo "[1/4] Installing system dependencies..."

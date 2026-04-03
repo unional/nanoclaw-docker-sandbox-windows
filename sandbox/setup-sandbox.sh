@@ -10,7 +10,8 @@ set -euo pipefail
 
 WORKSPACE="${HOME}/nanoclaw-workspace"
 SANDBOX_NAME="claude-nanoclaw-workspace"
-REPO_URL="https://github.com/qwibitai/nanoclaw.git"
+REPO_URL="https://github.com/gabi-simons/nanoclaw.git"
+REPO_BRANCH="feature/sandbox-setup-script"
 
 echo ""
 echo "=== NanoClaw Docker Sandbox Setup ==="
@@ -36,13 +37,11 @@ if docker sandbox ls --format "{{.Name}}" 2>/dev/null | grep -q "^${SANDBOX_NAME
 fi
 
 # ── Clone NanoClaw on host ─────────────────────────────────────────
-mkdir -p "$WORKSPACE"
-
-if [ -f "${WORKSPACE}/nanoclaw/package.json" ]; then
+if [ -f "${WORKSPACE}/package.json" ]; then
   echo "NanoClaw already cloned."
 else
   echo "Cloning NanoClaw..."
-  git clone "$REPO_URL" "${WORKSPACE}/nanoclaw"
+  git clone -b "$REPO_BRANCH" "$REPO_URL" "$WORKSPACE"
 fi
 
 # ── Create sandbox using Claude agent type ─────────────────────────
@@ -66,9 +65,9 @@ echo "Now run:"
 echo ""
 echo "  docker sandbox run ${SANDBOX_NAME}"
 echo ""
-echo "Then inside the sandbox:"
+echo "Then inside Claude Code, run:"
 echo ""
-echo "  bash \$(df -h | grep virtiofs | awk '{print \$NF}')/nanoclaw/sandbox/init.sh"
+echo "  bash sandbox/init.sh"
 echo ""
-echo "When done: claude  then  /setup"
+echo "When done:  /setup"
 echo ""
