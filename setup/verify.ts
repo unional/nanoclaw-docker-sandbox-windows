@@ -22,6 +22,14 @@ import {
 } from './platform.js';
 import { emitStatus } from './status.js';
 
+/** Detect Docker Sandbox environment */
+function isSandbox(): boolean {
+  return (
+    fs.existsSync(path.join(os.homedir(), '.nanoclaw-workspace')) ||
+    (process.env.http_proxy?.includes('host.docker.internal') ?? false)
+  );
+}
+
 export async function run(_args: string[]): Promise<void> {
   const projectRoot = process.cwd();
   const platform = getPlatform();
@@ -166,8 +174,12 @@ export async function run(_args: string[]): Promise<void> {
   }
 
   // Determine overall status
+  // In sandbox mode, there's no background service — NanoClaw runs in foreground
+  const serviceOk = isSandbox()
+    ? service !== 'failed'
+    : service === 'running';
   const status =
-    service === 'running' &&
+    serviceOk &&
     credentials !== 'missing' &&
     anyChannelConfigured &&
     registeredGroups > 0

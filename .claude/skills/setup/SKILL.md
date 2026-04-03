@@ -27,7 +27,7 @@ Tell the user: "Detected Docker Sandbox environment. Running initial setup..." T
 bash sandbox/init.sh
 ```
 
-This installs system dependencies (`build-essential`), npm packages, applies sandbox patches, and builds NanoClaw + the agent container. It takes 3-5 minutes. Wait for it to complete, then continue to step 1.
+This installs system dependencies (`build-essential`), npm packages, applies sandbox patches, builds NanoClaw + the agent container, and commits the patches. It takes 5-30 minutes depending on internet speed (everything goes through the sandbox proxy). Run it in the background with a long timeout and wait for completion, then continue to step 1.
 
 **If the conditions are false** (not a sandbox, or already initialized): skip this step.
 
@@ -291,10 +291,21 @@ Each skill will:
 4. Register the chat with the correct JID format
 5. Build and verify
 
-**After all channel skills complete**, install dependencies and rebuild — channel merges may introduce new packages:
+**After all channel skills complete**, install dependencies, re-apply sandbox patches (if in sandbox — channel code wasn't present during initial patching), and rebuild:
 
 ```bash
-npm install && npm run build
+npm install
+```
+
+**If IS_SANDBOX=true:** Re-run sandbox patches to cover newly merged channel code (e.g. Telegram proxy support):
+```bash
+bash sandbox/sandbox-patch.sh
+npm run build
+```
+
+**If IS_SANDBOX=false:**
+```bash
+npm run build
 ```
 
 If the build fails, read the error output and fix it (usually a missing dependency). Then continue to step 7.
@@ -345,8 +356,9 @@ Replace `USERNAME` with the actual username (from `whoami`). Run the two `sudo` 
 Run `npx tsx setup/index.ts --step verify` and parse the status block.
 
 **If STATUS=failed, fix each:**
+- SERVICE=not_found and IS_SANDBOX=true → This is expected (sandbox runs in foreground, no service). Not an error.
 - SERVICE=stopped → `npm run build`, then restart: `launchctl kickstart -k gui/$(id -u)/com.nanoclaw` (macOS) or `systemctl --user restart nanoclaw` (Linux) or `bash start-nanoclaw.sh` (WSL nohup)
-- SERVICE=not_found → re-run step 8
+- SERVICE=not_found (non-sandbox) → re-run step 8
 - CREDENTIALS=missing → re-run step 4 (Docker: check `onecli secrets list`; Apple Container: check `.env` for credentials)
 - CHANNEL_AUTH shows `not_found` for any channel → re-invoke that channel's skill (e.g. `/add-telegram`)
 - REGISTERED_GROUPS=0 → re-invoke the channel skills from step 6

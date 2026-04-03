@@ -23,7 +23,7 @@ cd "$NANOCLAW_DIR"
 echo "$NANOCLAW_DIR" > /home/agent/.nanoclaw-workspace
 
 # ── 1. System dependencies ──────────────────────────────────────
-echo "[1/4] Installing system dependencies..."
+echo "[1/5] Installing system dependencies..."
 sudo apt-get update -qq >/dev/null 2>&1
 sudo apt-get install -y -qq build-essential >/dev/null 2>&1
 npm config set strict-ssl false
@@ -37,14 +37,14 @@ fi
 echo "  done"
 
 # ── 2. Install npm dependencies ─────────────────────────────────
-echo "[2/4] Installing npm dependencies..."
+echo "[2/5] Installing npm dependencies..."
 rm -rf node_modules
 npm install 2>&1 | tail -1
 npm install https-proxy-agent 2>&1 | tail -1
 echo "  done"
 
 # ── 3. Apply sandbox patches ────────────────────────────────────
-echo "[3/4] Applying sandbox patches..."
+echo "[3/5] Applying sandbox patches..."
 # Fix CRLF line endings (sed -i fails on virtiofs, use temp file + mv)
 for f in sandbox/*.sh container/build.sh setup.sh; do
   if [ -f "$f" ]; then
@@ -55,9 +55,16 @@ bash sandbox/sandbox-patch.sh 2>&1 | grep -E "\[ok\]|\[--\]|=== Done" || true
 echo "  done"
 
 # ── 4. Build NanoClaw + agent container ─────────────────────────
-echo "[4/4] Building NanoClaw..."
+echo "[4/5] Building NanoClaw..."
 npm run build 2>&1 | tail -1
 bash container/build.sh 2>&1 | tail -3
+echo "  done"
+
+# ── 5. Commit sandbox patches so channel merges don't conflict ──
+echo "[5/5] Committing sandbox patches..."
+git add -A 2>/dev/null || true
+git -c user.email="sandbox@nanoclaw.dev" -c user.name="NanoClaw Sandbox" \
+  commit -m "chore: apply sandbox patches" --no-verify 2>/dev/null || true
 echo "  done"
 
 touch /home/agent/.nanoclaw-initialized

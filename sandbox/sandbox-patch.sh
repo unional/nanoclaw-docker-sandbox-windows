@@ -218,15 +218,25 @@ patchFile("setup/container.ts", [
   },
 ]);
 
-// Patch 7: Telegram HttpsProxyAgent (only if telegram channel is installed)
-// Grammy doesn't respect HTTP_PROXY env vars — needs explicit proxy agent
+// Patch 7: Telegram proxy (only if telegram channel is installed)
+// Grammy doesn't respect HTTP_PROXY env vars — needs undici ProxyAgent as dispatcher
 patchFile("src/channels/telegram.ts", [
   {
-    name: "telegram-proxy-import",
+    name: "telegram-proxy-fn",
     marker: "SANDBOX_PATCH_TELEGRAM_PROXY",
-    insertAfter: "import { Bot",
-    code: `// SANDBOX_PATCH_TELEGRAM_PROXY: grammy needs explicit proxy agent in sandbox
-import { HttpsProxyAgent } from 'https-proxy-agent';`,
+    insertAfter: "} from '../types.js';",
+    code: `
+// SANDBOX_PATCH_TELEGRAM_PROXY: grammy needs explicit proxy for sandbox
+function _buildProxyClientOpts(): { baseFetchConfig?: Record<string, unknown> } {
+  const proxyUrl = process.env.HTTPS_PROXY || process.env.https_proxy;
+  if (!proxyUrl) return {};
+  try {
+    // Node 20+ fetch uses undici — pass ProxyAgent as dispatcher
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { ProxyAgent } = require('undici');
+    return { baseFetchConfig: { dispatcher: new ProxyAgent(proxyUrl) } };
+  } catch { return {}; }
+}`,
   },
   {
     name: "telegram-proxy-config",
@@ -234,11 +244,7 @@ import { HttpsProxyAgent } from 'https-proxy-agent';`,
     replace: {
       from: "this.bot = new Bot(this.botToken);",
       to: `// SANDBOX_PATCH_TELEGRAM_BOT_CONFIG: route through sandbox MITM proxy
-    const _proxyUrl = process.env.HTTPS_PROXY || process.env.https_proxy || '';
-    const _botConfig = _proxyUrl
-      ? { client: { baseFetchConfig: { agent: new HttpsProxyAgent(_proxyUrl), compress: true } } }
-      : undefined;
-    this.bot = new Bot(this.botToken, _botConfig);`,
+    this.bot = new Bot(this.botToken, { client: _buildProxyClientOpts() });`,
     },
   },
 ]);
