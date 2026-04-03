@@ -49,15 +49,8 @@ if docker sandbox ls --format "{{.Name}}" </dev/null 2>/dev/null | grep -q "^${S
 fi
 
 # ── Clone NanoClaw on host ─────────────────────────────────────────
-if [ -d "${WORKSPACE}/.git" ]; then
-  echo "Updating NanoClaw..."
-  git -C "$WORKSPACE" reset --hard </dev/null 2>/dev/null
-  git -C "$WORKSPACE" checkout "$REPO_BRANCH" </dev/null 2>/dev/null || true
-  git -C "$WORKSPACE" pull origin "$REPO_BRANCH" </dev/null || {
-    echo "Update failed, re-cloning..."
-    rm -rf "$WORKSPACE"
-    git clone -b "$REPO_BRANCH" "$REPO_URL" "$WORKSPACE" </dev/null
-  }
+if [ -f "${WORKSPACE}/package.json" ]; then
+  echo "NanoClaw already cloned."
 else
   echo "Cloning NanoClaw..."
   git clone -b "$REPO_BRANCH" "$REPO_URL" "$WORKSPACE" </dev/null
