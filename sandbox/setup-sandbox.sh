@@ -58,12 +58,10 @@ docker sandbox network proxy "$SANDBOX_NAME" \
 
 echo ""
 echo "========================================="
-echo "  Sandbox created!"
+echo "  Sandbox created! Launching..."
 echo "========================================="
 echo ""
-echo "Now run:"
+echo "Type /setup when Claude Code starts."
 echo ""
-echo "  docker sandbox run ${SANDBOX_NAME}"
-echo ""
-echo "Then type:  /setup"
-echo ""
+
+docker sandbox run "$SANDBOX_NAME"
