@@ -27,6 +27,10 @@ echo "[1/4] Installing system dependencies..."
 sudo apt-get update -qq >/dev/null 2>&1
 sudo apt-get install -y -qq build-essential >/dev/null 2>&1
 npm config set strict-ssl false
+if [ -n "${http_proxy:-}" ]; then
+  npm config set proxy "$http_proxy"
+  npm config set https-proxy "$http_proxy"
+fi
 echo "  done"
 
 # ── 2. Install npm dependencies ─────────────────────────────────
