@@ -5,11 +5,17 @@
  * ALL outbound requests through the sandbox MITM proxy. This eliminates the
  * need for per-library proxy configuration in most cases.
  *
- * Two layers are patched:
+ * Three layers are patched:
  *   1. https.globalAgent → HttpsProxyAgent  (covers node-fetch, axios, etc.)
  *      Libraries that create their own agent (e.g. Grammy) must be configured
  *      to use https.globalAgent instead — see telegram.ts baseFetchConfig.
  *   2. undici global dispatcher → ProxyAgent (covers Node's built-in fetch)
+ *   3. ws.WebSocket patched → injects HttpsProxyAgent into every WebSocket
+ *      connection that doesn't already have an agent set. The ws package
+ *      bypasses https.globalAgent (it uses tls.connect directly), so discord.js
+ *      gateway WebSocket connections would otherwise fail in sandboxed networks.
+ *      This must run before any module that imports discord.js/@discordjs/ws
+ *      captures ws.WebSocket into a module-level variable.
  */
 import fs from 'fs';
 import https from 'https';
@@ -51,17 +57,40 @@ if (proxyUrl) {
     // https-proxy-agent not installed — non-sandbox environment
   }
 
-  // Layer 2: Node's built-in fetch (undici)
+  // Layer 2: Node's built-in fetch (undici global dispatcher)
+  // SKIPPED: dynamic import('undici') deadlocks when discord.js also loads undici
+  // concurrently during ESM module graph initialization. Discord REST calls are
+  // already proxied via the explicit Client({ rest: { agent } }) configuration.
+  // Any app-level fetch() calls that need proxying can use https.globalAgent
+  // (layer 1) via a node-fetch/axios wrapper, or set up undici after startup.
+
+  // Layer 3: Patch ws.WebSocket to inject the proxy agent.
+  // The ws npm package (used by discord.js gateway) bypasses https.globalAgent
+  // and calls tls.connect() directly, so setting https.globalAgent is not enough.
+  // We patch ws.WebSocket here — before channels/discord.ts imports discord.js —
+  // so that @discordjs/ws captures the patched class in its module-level variable.
+  // WhatsApp (Baileys) already passes its own agent explicitly, so the
+  // `if (!options.agent)` guard avoids double-wrapping those connections.
   try {
-    const mod = await (Function('return import("undici")')() as Promise<any>);
-    const opts: any = { uri: proxyUrl };
-    if (ca) opts.requestTls = { ca };
-    mod.setGlobalDispatcher(new mod.ProxyAgent(opts));
+    const { createRequire } = await import('module');
+    const req = createRequire(import.meta.url);
+    const wsModule = req('ws') as any;
+    const hpaMod = await (Function(
+      'return import("https-proxy-agent")',
+    )() as Promise<any>);
+    const wsAgent = new hpaMod.HttpsProxyAgent(proxyUrl);
+    const OrigWS = wsModule.WebSocket;
+    class ProxiedWebSocket extends OrigWS {
+      constructor(url: string, protocols?: any, options: any = {}) {
+        super(url, protocols, options.agent ? options : { ...options, agent: wsAgent });
+      }
+    }
+    wsModule.WebSocket = ProxiedWebSocket;
     logger.info(
       { proxy: proxyUrl },
-      'Global undici proxy dispatcher set (built-in fetch layer)',
+      'ws.WebSocket patched with proxy agent (discord.js gateway layer)',
     );
   } catch {
-    // undici not available — non-sandbox or not installed
+    // ws not installed — non-sandbox or discord channel not added
   }
 }

@@ -1,5 +1,7 @@
-// Global proxy bootstrap — must be first import (before any HTTP calls)
-import './proxy-bootstrap.js';
+// Global proxy bootstrap — must be first import (before any HTTP calls).
+// CJS (.cjs) so it runs synchronously during ESM link phase, before
+// @discordjs/ws captures ws.WebSocket at its module level.
+import './proxy-bootstrap.cjs';
 
 import fs from 'fs';
 import path from 'path';
