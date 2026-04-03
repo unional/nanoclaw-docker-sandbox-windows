@@ -96,5 +96,7 @@ function resolveConfigTimezone(): string {
 }
 export const TIMEZONE = resolveConfigTimezone();
 
-// Sandbox-only fork: always true
-export const IS_SANDBOX = true;
+// Detect Docker Sandbox environment (DinD microVM)
+export const IS_SANDBOX =
+  existsSync(path.join(os.homedir(), '.nanoclaw-workspace')) ||
+  (process.env.http_proxy?.includes('host.docker.internal') ?? false);

@@ -81,10 +81,16 @@ function buildVolumeMounts(
 
     // Shadow .env so the agent cannot read secrets from the mounted project root.
     // Credentials are injected by the OneCLI gateway, never exposed to containers.
+    // Use an empty file instead of /dev/null (Docker may reject /dev/null mounts in sandboxes).
     const envFile = path.join(projectRoot, '.env');
     if (fs.existsSync(envFile)) {
+      const emptyEnv = path.join(DATA_DIR, 'empty-env');
+      if (!fs.existsSync(emptyEnv)) {
+        fs.mkdirSync(path.dirname(emptyEnv), { recursive: true });
+        fs.writeFileSync(emptyEnv, '');
+      }
       mounts.push({
-        hostPath: '/dev/null',
+        hostPath: emptyEnv,
         containerPath: '/workspace/project/.env',
         readonly: true,
       });
