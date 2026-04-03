@@ -628,10 +628,8 @@ export async function runContainerAgent(
   onProcess: (proc: ChildProcess, containerName: string) => void,
   onOutput?: (output: ContainerOutput) => Promise<void>,
 ): Promise<ContainerOutput> {
-  // Sandbox mode: DinD can't bind-mount, use tmpfs + tar pipe approach
-  if (IS_SANDBOX) {
-    return sandboxRunContainerAgent(group, input, onProcess, onOutput);
-  }
+  // Sandbox fork: always use tmpfs + tar pipe (DinD can't bind-mount)
+  return sandboxRunContainerAgent(group, input, onProcess, onOutput);
 
   const startTime = Date.now();
 
