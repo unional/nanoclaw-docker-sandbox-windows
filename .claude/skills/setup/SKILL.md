@@ -303,11 +303,11 @@ Each skill will:
 4. Register the chat with the correct JID format
 5. Build and verify
 
-**After all channel skills complete**, install dependencies and rebuild:
+**After all channel skills complete**, do a clean install of dependencies and rebuild — channel merges can leave `node_modules` in a broken state with conflicting native binaries:
 
 ```bash
-npm install --no-bin-links
-npm run build
+rm -rf node_modules
+npm install --no-bin-links && npm run build
 ```
 
 The `--no-bin-links` flag prevents symlink errors on virtiofs (Docker sandbox). It is harmless on normal filesystems.
