@@ -45,27 +45,15 @@ Then run `/setup`. Claude Code handles everything: dependencies, authentication,
 
 > **Note:** Commands prefixed with `/` (like `/setup`, `/add-whatsapp`) are [Claude Code skills](https://code.claude.com/docs/en/skills). Type them inside the `claude` CLI prompt, not in your regular terminal. If you don't have Claude Code installed, get it at [claude.com/product/claude-code](https://claude.com/product/claude-code).
 
-### Docker Sandbox (alternative)
+### Docker Sandbox (optional)
 
-Run NanoClaw in an isolated [Docker AI Sandbox](https://docs.docker.com/ai/sandboxes/get-started/) — a microVM with its own Docker daemon and proxy-managed API keys. No API key configuration needed.
-
-**Prerequisites:** Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) 4.40+ and enable sandbox support.
-
-Then run:
+Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/) 4.40+ with sandbox support.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/qwibitai/nanoclaw/main/sandbox/setup-sandbox.sh | bash
-```
-
-When the script finishes, enter the sandbox and run `/setup`:
-
-```bash
 docker sandbox run claude-nanoclaw-workspace
-# Inside the sandbox, type:
-/setup
+# then type: /setup
 ```
-
-`/setup` auto-detects the sandbox environment, installs dependencies, applies patches, builds NanoClaw, and walks through channel configuration.
 
 ## Philosophy
 
