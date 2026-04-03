@@ -65,6 +65,12 @@ WRAPPER
   done)
 fi
 
+# Copy actual binaries for packages that check platform at runtime (not just .bin wrappers)
+# esbuild's JS code looks for @esbuild/linux-x64 — ensure it survived the tar-pipe
+if [ -f /tmp/npm-build/node_modules/esbuild/bin/esbuild ] && [ -d node_modules/esbuild/bin ]; then
+  cp /tmp/npm-build/node_modules/esbuild/bin/esbuild node_modules/.bin/esbuild 2>/dev/null || true
+fi
+
 # Verify
 node -e "require('better-sqlite3')" 2>/dev/null && echo "  better-sqlite3: OK" || echo "  better-sqlite3: FAILED"
 node_modules/.bin/tsc --version 2>/dev/null && echo "  tsc: OK" || echo "  tsc: FAILED"

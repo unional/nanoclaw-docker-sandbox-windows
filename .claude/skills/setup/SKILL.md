@@ -27,7 +27,7 @@ Tell the user: "Detected Docker Sandbox environment. Running initial setup..." T
 bash sandbox/init.sh
 ```
 
-This installs system dependencies (`build-essential`), npm packages, applies sandbox patches, builds NanoClaw + the agent container, and commits the patches. It takes 5-30 minutes depending on internet speed (everything goes through the sandbox proxy). Run it in the background with a long timeout and wait for completion, then continue to step 1.
+This configures the sandbox proxy, fixes CRLF line endings, and installs npm packages (using a /tmp workaround for virtiofs symlink limitations). It takes 2-5 minutes. Run it in the background with a long timeout and wait for completion, then continue to step 1.
 
 **If the conditions are false** (not a sandbox, or already initialized): skip this step.
 
@@ -306,9 +306,11 @@ Each skill will:
 **After all channel skills complete**, install dependencies and rebuild:
 
 ```bash
-npm install
+npm install --no-bin-links
 npm run build
 ```
+
+The `--no-bin-links` flag prevents symlink errors on virtiofs (Docker sandbox). It is harmless on normal filesystems.
 
 If the build fails, read the error output and fix it (usually a missing dependency). Then continue to step 7.
 
