@@ -50,7 +50,10 @@ fi
 
 # ── Clone NanoClaw on host ─────────────────────────────────────────
 if [ -f "${WORKSPACE}/package.json" ]; then
-  echo "NanoClaw already cloned."
+  echo "Updating NanoClaw..."
+  git -C "$WORKSPACE" fetch origin </dev/null
+  git -C "$WORKSPACE" checkout "$REPO_BRANCH" </dev/null 2>/dev/null || true
+  git -C "$WORKSPACE" pull origin "$REPO_BRANCH" </dev/null
 else
   echo "Cloning NanoClaw..."
   git clone -b "$REPO_BRANCH" "$REPO_URL" "$WORKSPACE" </dev/null
