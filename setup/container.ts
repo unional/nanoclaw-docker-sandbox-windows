@@ -103,7 +103,10 @@ export async function run(args: string[]): Promise<void> {
   let buildOk = false;
   logger.info({ runtime }, 'Building container');
   try {
-    execSync(`${buildCmd} -t ${image} .`, {
+    const proxyBuildArgs: string[] = [];
+    if (process.env.http_proxy) proxyBuildArgs.push('--build-arg', `http_proxy=${process.env.http_proxy}`);
+    if (process.env.https_proxy) proxyBuildArgs.push('--build-arg', `https_proxy=${process.env.https_proxy}`);
+    execSync(`${buildCmd} ${proxyBuildArgs.join(' ')} -t ${image} .`, {
       cwd: path.join(projectRoot, 'container'),
       stdio: ['ignore', 'pipe', 'pipe'],
     });

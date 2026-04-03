@@ -291,20 +291,10 @@ Each skill will:
 4. Register the chat with the correct JID format
 5. Build and verify
 
-**After all channel skills complete**, install dependencies, re-apply sandbox patches (if in sandbox — channel code wasn't present during initial patching), and rebuild:
+**After all channel skills complete**, install dependencies and rebuild:
 
 ```bash
 npm install
-```
-
-**If IS_SANDBOX=true:** Re-run sandbox patches to cover newly merged channel code (e.g. Telegram proxy support):
-```bash
-bash sandbox/sandbox-patch.sh
-npm run build
-```
-
-**If IS_SANDBOX=false:**
-```bash
 npm run build
 ```
 
@@ -319,7 +309,7 @@ AskUserQuestion: Agent access to external directories?
 
 ## 8. Start Service
 
-**If IS_SANDBOX=true:** Skip the service step entirely. Tell the user: "In a Docker Sandbox, NanoClaw runs in the foreground. After setup is complete, run `npm start` to start NanoClaw. Use Ctrl+C to stop." Then skip to step 9.
+**If IS_SANDBOX=true:** Skip the service step. After all setup steps complete, auto-start NanoClaw by running `npm start` in the foreground. Tell the user: "Starting NanoClaw... Send a message to your bot to test." Then skip to step 9.
 
 **If IS_SANDBOX=false (normal setup):**
 
