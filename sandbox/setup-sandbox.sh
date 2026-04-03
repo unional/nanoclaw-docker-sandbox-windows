@@ -77,7 +77,7 @@ echo "Type /setup when Claude Code starts."
 echo ""
 
 if grep -qi microsoft /proc/version 2>/dev/null; then
-  cmd.exe /c start "NanoClaw" docker sandbox run "$SANDBOX_NAME" </dev/null
+  cmd.exe /c "start cmd /c docker sandbox run $SANDBOX_NAME" </dev/null
 else
   exec docker sandbox run "$SANDBOX_NAME" </dev/tty
 fi
