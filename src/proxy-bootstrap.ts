@@ -82,7 +82,11 @@ if (proxyUrl) {
     const OrigWS = wsModule.WebSocket;
     class ProxiedWebSocket extends OrigWS {
       constructor(url: string, protocols?: any, options: any = {}) {
-        super(url, protocols, options.agent ? options : { ...options, agent: wsAgent });
+        super(
+          url,
+          protocols,
+          options.agent ? options : { ...options, agent: wsAgent },
+        );
       }
     }
     wsModule.WebSocket = ProxiedWebSocket;
