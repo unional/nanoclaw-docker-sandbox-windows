@@ -150,37 +150,15 @@ The credential system depends on the container runtime chosen in step 3.
 
 ### 4a. Docker → OneCLI
 
-**If IS_SANDBOX=true from step 2:**
-
-First, explain how to get an API key:
-
-Tell the user: "NanoClaw needs an Anthropic API key to call Claude from agent containers. You have two options:"
-
-AskUserQuestion: "How do you want to authenticate?"
-- **Anthropic API key (recommended for sandbox):** Get one from console.anthropic.com → API Keys → Create Key. You can then configure it in Docker Desktop (proxy-managed) or paste it directly.
-- **Claude subscription (Pro/Max):** Use your existing Claude subscription via OAuth token. No API key needed.
-
-### If Anthropic API key:
-
-AskUserQuestion: "Do you have an Anthropic API key? If not, go to https://console.anthropic.com → API Keys → Create Key (starts with `sk-ant-...`). Then paste it here or add it in Docker Desktop → Settings → AI."
-
-**Docker Desktop managed:** Tell user to open Docker Desktop → Settings → AI → add the key. Write `ANTHROPIC_API_KEY=proxy-managed` and `ASSISTANT_NAME=nanoclaw` to `.env`. Copy to `data/env/env` (`mkdir -p data/env && cp .env data/env/env`).
-
-**Direct in .env:** AskUserQuestion for the key. Write `ANTHROPIC_API_KEY=<key>` and `ASSISTANT_NAME=nanoclaw` to `.env`. Copy to `data/env/env`.
-
-### If Claude subscription (Pro/Max):
-
-Tell user to run `claude setup-token` to get an OAuth token. Write `CLAUDE_CODE_OAUTH_TOKEN=<token>` and `ASSISTANT_NAME=nanoclaw` to `.env`. Copy to `data/env/env`.
-
-**If IS_SANDBOX=false (normal setup):**
-
 AskUserQuestion: "How do you want to authenticate with Claude?"
-- **Claude subscription (Pro/Max):** Use your existing Claude Pro or Max subscription. No API key needed.
-- **Anthropic API key:** Use an API key from console.anthropic.com.
+- **Claude subscription (Pro/Max) — recommended:** Use your existing Claude subscription. No separate API key or billing needed.
+- **Anthropic API key:** Use an API key from console.anthropic.com (separate billing).
 
-**Subscription:** Tell user to run `claude setup-token` in another terminal, copy the token, add `CLAUDE_CODE_OAUTH_TOKEN=<token>` to `.env`. Do NOT collect the token in chat.
+**Subscription:** Tell user to run `claude setup-token` in another terminal (or in the sandbox terminal), copy the token, add `CLAUDE_CODE_OAUTH_TOKEN=<token>` to `.env`. Do NOT collect the token in chat.
 
-**API key:** Tell the user: "Go to https://console.anthropic.com → API Keys → Create Key. The key starts with `sk-ant-...`". AskUserQuestion for confirmation they have the key, then tell them to add `ANTHROPIC_API_KEY=<key>` to `.env`. Do NOT collect the key in chat.
+**API key:** Tell the user: "Go to https://console.anthropic.com → API Keys → Create Key. The key starts with `sk-ant-...`". Then tell them to add `ANTHROPIC_API_KEY=<key>` to `.env`. Do NOT collect the key in chat.
+
+**If IS_SANDBOX=true:** Also copy `.env` to `data/env/env` (`mkdir -p data/env && cp .env data/env/env`).
 
 Install OneCLI and its CLI tool:
 
