@@ -86,7 +86,7 @@ Run `bash setup.sh` and parse the status block.
 
 Run `npx tsx setup/index.ts --step environment` and parse the status block.
 
-- If HAS_AUTH=true → WhatsApp is already configured, note for step 5
+- If HAS_AUTH=true → WhatsApp is already configured, note for step 6
 - If HAS_REGISTERED_GROUPS=true → note existing config, offer to skip or reconfigure
 - Record APPLE_CONTAINER and DOCKER values for step 3
 
@@ -205,6 +205,14 @@ Note: The Docker Desktop proxy does NOT work with OAuth tokens — only API keys
 
 **If IS_SANDBOX=false (normal setup):**
 
+AskUserQuestion: "How do you want to authenticate with Claude?"
+- **Claude subscription (Pro/Max):** Use your existing Claude Pro or Max subscription. No API key needed.
+- **Anthropic API key:** Use an API key from console.anthropic.com.
+
+**Subscription:** Tell user to run `claude setup-token` in another terminal, copy the token, add `CLAUDE_CODE_OAUTH_TOKEN=<token>` to `.env`. Do NOT collect the token in chat.
+
+**API key:** Tell the user: "Go to https://console.anthropic.com → API Keys → Create Key. The key starts with `sk-ant-...`". AskUserQuestion for confirmation they have the key, then tell them to add `ANTHROPIC_API_KEY=<key>` to `.env`. Do NOT collect the key in chat.
+
 Install OneCLI and its CLI tool:
 
 ```bash
@@ -300,7 +308,19 @@ echo 'ANTHROPIC_API_KEY=<their-key>' >> .env
 
 Verify the proxy starts: `npm run dev` should show "Credential proxy listening" in the logs.
 
-## 5. Set Up Channels
+## 5. Install Skills Marketplace
+
+Register and install the NanoClaw skills marketplace plugin so all feature skills (channel integrations, add-ons) are available:
+
+```bash
+claude plugin marketplace add qwibitai/nanoclaw-skills
+claude plugin marketplace update nanoclaw-skills
+claude plugin install nanoclaw-skills@nanoclaw-skills --scope project
+```
+
+The marketplace update ensures the local cache is fresh before installing. This is hot-loaded — no restart needed. All feature skills become immediately available.
+
+## 6. Set Up Channels
 
 AskUserQuestion (multiSelect): Which messaging channels do you want to enable?
 - WhatsApp (authenticates via QR code or pairing code)
@@ -330,18 +350,18 @@ Each skill will:
 npm install && npm run build
 ```
 
-If the build fails, read the error output and fix it (usually a missing dependency). Then continue to step 6.
+If the build fails, read the error output and fix it (usually a missing dependency). Then continue to step 7.
 
-## 6. Mount Allowlist
+## 7. Mount Allowlist
 
 AskUserQuestion: Agent access to external directories?
 
 **No:** `npx tsx setup/index.ts --step mounts -- --empty`
 **Yes:** Collect paths/permissions. `npx tsx setup/index.ts --step mounts -- --json '{"allowedRoots":[...],"blockedPatterns":[],"nonMainReadOnly":true}'`
 
-## 7. Start Service
+## 8. Start Service
 
-**If IS_SANDBOX=true:** Skip the service step entirely. Tell the user: "In a Docker Sandbox, NanoClaw runs in the foreground. After setup is complete, run `npm start` to start NanoClaw. Use Ctrl+C to stop." Then skip to step 8.
+**If IS_SANDBOX=true:** Skip the service step entirely. Tell the user: "In a Docker Sandbox, NanoClaw runs in the foreground. After setup is complete, run `npm start` to start NanoClaw. Use Ctrl+C to stop." Then skip to step 9.
 
 **If IS_SANDBOX=false (normal setup):**
 
@@ -373,23 +393,23 @@ Replace `USERNAME` with the actual username (from `whoami`). Run the two `sudo` 
 - Linux: check `systemctl --user status nanoclaw`.
 - Re-run the service step after fixing.
 
-## 8. Verify
+## 9. Verify
 
 Run `npx tsx setup/index.ts --step verify` and parse the status block.
 
 **If STATUS=failed, fix each:**
 - SERVICE=stopped → `npm run build`, then restart: `launchctl kickstart -k gui/$(id -u)/com.nanoclaw` (macOS) or `systemctl --user restart nanoclaw` (Linux) or `bash start-nanoclaw.sh` (WSL nohup)
-- SERVICE=not_found → re-run step 7
+- SERVICE=not_found → re-run step 8
 - CREDENTIALS=missing → re-run step 4 (Docker: check `onecli secrets list`; Apple Container: check `.env` for credentials)
 - CHANNEL_AUTH shows `not_found` for any channel → re-invoke that channel's skill (e.g. `/add-telegram`)
-- REGISTERED_GROUPS=0 → re-invoke the channel skills from step 5
+- REGISTERED_GROUPS=0 → re-invoke the channel skills from step 6
 - MOUNT_ALLOWLIST=missing → `npx tsx setup/index.ts --step mounts -- --empty`
 
 Tell user to test: send a message in their registered chat. Show: `tail -f logs/nanoclaw.log`
 
 ## Troubleshooting
 
-**Service not starting:** Check `logs/nanoclaw.error.log`. Common: wrong Node path (re-run step 7), credential system not running (Docker: check `curl http://127.0.0.1:10254/api/health`; Apple Container: check `.env` credentials), missing channel credentials (re-invoke channel skill).
+**Service not starting:** Check `logs/nanoclaw.error.log`. Common: wrong Node path (re-run step 8), credential system not running (Docker: check `curl http://127.0.0.1:10254/api/health`; Apple Container: check `.env` credentials), missing channel credentials (re-invoke channel skill).
 
 **Container agent fails ("Claude Code process exited with code 1"):** Ensure the container runtime is running — `open -a Docker` (macOS Docker), `container system start` (Apple Container), or `sudo systemctl start docker` (Linux). Check container logs in `groups/main/logs/container-*.log`.
 
@@ -400,7 +420,7 @@ Tell user to test: send a message in their registered chat. Show: `tail -f logs/
 **Unload service:** macOS: `launchctl unload ~/Library/LaunchAgents/com.nanoclaw.plist` | Linux: `systemctl --user stop nanoclaw`
 
 
-## 9. Diagnostics
+## 10. Diagnostics
 
 1. Use the Read tool to read `.claude/skills/setup/diagnostics.md`.
 2. Follow every step in that file before completing setup.
