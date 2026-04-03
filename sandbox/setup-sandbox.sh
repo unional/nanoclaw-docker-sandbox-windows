@@ -13,8 +13,10 @@ set -euo pipefail
 if grep -qi microsoft /proc/version 2>/dev/null; then
   WIN_USER=$(cmd.exe /c "echo %USERNAME%" </dev/null 2>/dev/null | tr -d '\r\n')
   WORKSPACE="/mnt/c/Users/${WIN_USER}/nanoclaw-workspace"
+  DOCKER_WORKSPACE=$(wslpath -w "$WORKSPACE")
 else
   WORKSPACE="${HOME}/nanoclaw-workspace"
+  DOCKER_WORKSPACE="$WORKSPACE"
 fi
 SANDBOX_NAME="claude-nanoclaw-workspace"
 REPO_URL="https://github.com/gabi-simons/nanoclaw.git"
@@ -56,7 +58,7 @@ fi
 
 # ── Create sandbox using Claude agent type ─────────────────────────
 echo "Creating sandbox..."
-echo y | docker sandbox create claude "$WORKSPACE"
+echo y | docker sandbox create claude "$DOCKER_WORKSPACE"
 
 # ── Configure proxy bypass for WhatsApp + Telegram ─────────────────
 echo "Configuring network bypass..."
