@@ -76,10 +76,10 @@ node -e "require('better-sqlite3')" 2>/dev/null && echo "  better-sqlite3: OK" |
 node_modules/.bin/tsc --version 2>/dev/null && echo "  tsc: OK" || echo "  tsc: FAILED"
 echo "  done"
 
-# ── 3. Commit sandbox deps so channel merges have clean tree ─────
-echo "[3/3] Committing sandbox dependencies..."
-git add package.json package-lock.json 2>/dev/null
-git diff --cached --quiet || git commit -m "chore: add sandbox proxy dependencies" --no-verify 2>&1 | tail -1
+# ── 3. Clean working tree so channel merges don't hit conflicts ────
+echo "[3/3] Preparing for channel merges..."
+git add -A 2>/dev/null
+git diff --cached --quiet || git commit -m "chore: sandbox prep (deps + env)" --no-verify 2>&1 | tail -1
 echo "  done"
 
 touch /home/agent/.nanoclaw-initialized
