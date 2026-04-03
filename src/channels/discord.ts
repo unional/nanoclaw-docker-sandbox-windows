@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+
 import {
   Client,
   Events,
@@ -7,7 +10,7 @@ import {
 } from 'discord.js';
 import { ProxyAgent } from 'undici';
 
-import { ASSISTANT_NAME, TRIGGER_PATTERN } from '../config.js';
+import { ASSISTANT_NAME, GROUPS_DIR, TRIGGER_PATTERN } from '../config.js';
 import { readEnvFile } from '../env.js';
 import { logger } from '../logger.js';
 import { registerChannel, ChannelOpts } from './registry.js';
@@ -106,26 +109,37 @@ export class DiscordChannel implements Channel {
         }
       }
 
-      // Handle attachments — store placeholders so the agent knows something was sent
+      // Handle attachments — PDFs are downloaded after group check; others get placeholders
+      const pdfAttachments: Array<{ name: string; url: string }> = [];
       if (message.attachments.size > 0) {
-        const attachmentDescriptions = [...message.attachments.values()].map(
+        const descriptions = [...message.attachments.values()].flatMap(
           (att) => {
             const contentType = att.contentType || '';
+            if (
+              contentType === 'application/pdf' ||
+              att.name?.toLowerCase().endsWith('.pdf')
+            ) {
+              pdfAttachments.push({
+                name: att.name || `doc-${Date.now()}.pdf`,
+                url: att.url,
+              });
+              return [];
+            }
             if (contentType.startsWith('image/')) {
-              return `[Image: ${att.name || 'image'}]`;
+              return [`[Image: ${att.name || 'image'}]`];
             } else if (contentType.startsWith('video/')) {
-              return `[Video: ${att.name || 'video'}]`;
+              return [`[Video: ${att.name || 'video'}]`];
             } else if (contentType.startsWith('audio/')) {
-              return `[Audio: ${att.name || 'audio'}]`;
+              return [`[Audio: ${att.name || 'audio'}]`];
             } else {
-              return `[File: ${att.name || 'file'}]`;
+              return [`[File: ${att.name || 'file'}]`];
             }
           },
         );
-        if (content) {
-          content = `${content}\n${attachmentDescriptions.join('\n')}`;
-        } else {
-          content = attachmentDescriptions.join('\n');
+        if (descriptions.length > 0) {
+          content = content
+            ? `${content}\n${descriptions.join('\n')}`
+            : descriptions.join('\n');
         }
       }
 
@@ -163,6 +177,31 @@ export class DiscordChannel implements Channel {
           'Message from unregistered Discord channel',
         );
         return;
+      }
+
+      // Download PDF attachments for registered groups
+      for (const pdfAtt of pdfAttachments) {
+        try {
+          const res = await fetch(
+            pdfAtt.url,
+            discordProxyAgent
+              ? ({ dispatcher: discordProxyAgent } as never)
+              : {},
+          );
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const buffer = Buffer.from(await res.arrayBuffer());
+          const groupDir = path.join(GROUPS_DIR, group.folder);
+          const attachDir = path.join(groupDir, 'attachments');
+          fs.mkdirSync(attachDir, { recursive: true });
+          const filename = path.basename(pdfAtt.name);
+          fs.writeFileSync(path.join(attachDir, filename), buffer);
+          const sizeKB = Math.round(buffer.length / 1024);
+          const pdfRef = `[PDF: attachments/${filename} (${sizeKB}KB)]\nUse: pdf-reader extract attachments/${filename}`;
+          content = content ? `${content}\n${pdfRef}` : pdfRef;
+          logger.info({ jid: chatJid, filename }, 'Downloaded Discord PDF attachment');
+        } catch (err) {
+          logger.warn({ err, jid: chatJid }, 'Failed to download Discord PDF attachment');
+        }
       }
 
       // Deliver message — startMessageLoop() will pick it up

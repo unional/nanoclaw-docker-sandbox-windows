@@ -3,6 +3,7 @@ import fs from 'fs';
 import https from 'https';
 import path from 'path';
 import { HttpsProxyAgent } from 'https-proxy-agent';
+import { ProxyAgent } from 'undici';
 
 import makeWASocket, {
   Browsers,
@@ -22,6 +23,8 @@ const proxyUrl =
   process.env.http_proxy ||
   process.env.HTTP_PROXY;
 const waProxyAgent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined;
+// undici ProxyAgent for native fetch (used by downloadMediaMessage)
+const fetchDispatcher = proxyUrl ? new ProxyAgent({ uri: proxyUrl }) : undefined;
 
 /**
  * Fetch the latest WhatsApp Web client revision from sw.js via the proxy.
@@ -264,7 +267,13 @@ export class WhatsAppChannel implements Channel {
             // PDF attachment handling
             if (normalized?.documentMessage?.mimetype === 'application/pdf') {
               try {
-                const buffer = await downloadMediaMessage(msg, 'buffer', {});
+                const buffer = await downloadMediaMessage(
+                  msg,
+                  'buffer',
+                  fetchDispatcher
+                    ? ({ options: { dispatcher: fetchDispatcher } } as never)
+                    : {},
+                );
                 const groupDir = path.join(GROUPS_DIR, groups[chatJid].folder);
                 const attachDir = path.join(groupDir, 'attachments');
                 fs.mkdirSync(attachDir, { recursive: true });
