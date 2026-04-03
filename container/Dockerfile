@@ -43,6 +43,10 @@ RUN npm config set strict-ssl ${npm_config_strict_ssl}
 # Install agent-browser and claude-code globally
 RUN npm install -g agent-browser @anthropic-ai/claude-code
 
+# Install generate-image tool globally (keep source in /opt so symlink stays valid)
+COPY tools/generate-image /opt/generate-image
+RUN cd /opt/generate-image && npm install && npm run build && npm install -g .
+
 # Create app directory
 WORKDIR /app
 

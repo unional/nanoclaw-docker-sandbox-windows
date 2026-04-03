@@ -1,0 +1,16 @@
+{
+  "name": "generate-image",
+  "version": "1.0.0",
+  "description": "CLI tool for image generation via Pollinations.ai",
+  "type": "module",
+  "bin": {
+    "generate-image": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0"
+  }
+}
