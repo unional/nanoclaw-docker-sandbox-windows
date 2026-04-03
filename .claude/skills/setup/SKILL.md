@@ -11,7 +11,27 @@ Run setup steps automatically. Only pause when user action is required (channel 
 
 **UX Note:** Use `AskUserQuestion` for multiple-choice questions only (e.g. "Docker or Apple Container?", "which channels?"). Do NOT use it when free-text input is needed (e.g. phone numbers, tokens, paths) — just ask the question in plain text and wait for the user's reply.
 
-## 0. Git & Fork Setup
+## 0. Sandbox Bootstrap (conditional)
+
+Check if running inside a Docker Sandbox by looking for `sandbox/init.sh` AND the file `$HOME/.nanoclaw-workspace` does NOT exist (meaning init hasn't run yet):
+
+```bash
+test -f sandbox/init.sh && ! test -f "$HOME/.nanoclaw-initialized"
+```
+
+**If both conditions are true** (sandbox init script exists and hasn't been run yet):
+
+Tell the user: "Detected Docker Sandbox environment. Running initial setup..." Then run:
+
+```bash
+bash sandbox/init.sh
+```
+
+This installs system dependencies (`build-essential`), npm packages, applies sandbox patches, and builds NanoClaw + the agent container. It takes 3-5 minutes. Wait for it to complete, then continue to step 1.
+
+**If the conditions are false** (not a sandbox, or already initialized): skip this step.
+
+## 0b. Git & Fork Setup
 
 Check the git remote configuration to ensure the user has a fork and upstream is configured.
 
