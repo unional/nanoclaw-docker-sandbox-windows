@@ -154,9 +154,19 @@ AskUserQuestion: "How do you want to authenticate with Claude?"
 - **Claude subscription (Pro/Max) — recommended:** Use your existing Claude subscription. No separate API key or billing needed.
 - **Anthropic API key:** Use an API key from console.anthropic.com (separate billing).
 
-**Subscription:** Tell user to run `claude setup-token` in another terminal (or in the sandbox terminal), copy the token, add `CLAUDE_CODE_OAUTH_TOKEN=<token>` to `.env`. Do NOT collect the token in chat.
+**Subscription:** Tell user to run `claude setup-token` in another terminal (or in the sandbox terminal), copy the token, then paste it when asked. Use `AskUserQuestion` to collect the token, then write it to `.env` yourself using `printf` (NOT `echo`, which may produce UTF-16 on Windows):
 
-**API key:** Tell the user: "Go to https://console.anthropic.com → API Keys → Create Key. The key starts with `sk-ant-...`". Then tell them to add `ANTHROPIC_API_KEY=<key>` to `.env`. Do NOT collect the key in chat.
+```bash
+printf 'CLAUDE_CODE_OAUTH_TOKEN=%s\n' '<token>' > .env
+```
+
+After writing, verify: `grep -q 'CLAUDE_CODE_OAUTH_TOKEN' .env && echo OK`. If verification fails, the file may have wrong encoding — re-write it with `printf`.
+
+**API key:** Tell the user: "Go to https://console.anthropic.com → API Keys → Create Key. The key starts with `sk-ant-...`". Collect the key via `AskUserQuestion`, then write it yourself:
+
+```bash
+printf 'ANTHROPIC_API_KEY=%s\n' '<key>' > .env
+```
 
 **If IS_SANDBOX=true:** Also copy `.env` to `data/env/env` (`mkdir -p data/env && cp .env data/env/env`).
 

@@ -1,2 +1,5 @@
 # Force LF line endings for shell scripts (critical for Docker sandboxes)
 *.sh text eol=lf
+
+# Auto-generated badge — always accept incoming version on merge
+repo-tokens/badge.svg merge=theirs
