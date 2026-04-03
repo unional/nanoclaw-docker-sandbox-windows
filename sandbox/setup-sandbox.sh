@@ -76,4 +76,4 @@ echo ""
 echo "Type /setup when Claude Code starts."
 echo ""
 
-docker sandbox run "$SANDBOX_NAME"
+docker sandbox run "$SANDBOX_NAME" </dev/tty
