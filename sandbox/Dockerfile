@@ -9,9 +9,10 @@ RUN apt-get update -qq && \
 
 USER agent
 
-# Copy scripts (fix line endings)
+# Copy scripts and plugin (fix line endings)
 COPY --chown=agent:agent nanoclaw-init.sh /home/agent/nanoclaw-init.sh
 COPY --chown=agent:agent sandbox-patch.sh /home/agent/sandbox-patch.sh
+COPY --chown=agent:agent docker-plugin/ /home/agent/docker-plugin/
 RUN sed -i 's/\r$//' /home/agent/nanoclaw-init.sh /home/agent/sandbox-patch.sh && \
     chmod +x /home/agent/nanoclaw-init.sh
 

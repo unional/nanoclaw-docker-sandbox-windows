@@ -1,0 +1,6 @@
+{
+  "schemaVersion": "1",
+  "kind": "plugin",
+  "name": "nanoclaw-network-bypass",
+  "displayName": "NanoClaw Network Bypass"
+}

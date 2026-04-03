@@ -1,0 +1,8 @@
+{
+  "bypassDomains": [
+    "api.telegram.org",
+    "*.telegram.org",
+    "*.whatsapp.com",
+    "*.whatsapp.net"
+  ]
+}

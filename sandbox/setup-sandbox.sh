@@ -11,6 +11,7 @@ set -euo pipefail
 WORKSPACE="${HOME}/nanoclaw-workspace"
 SANDBOX_NAME="shell-nanoclaw-workspace"
 TEMPLATE="gabinanoclaw/nanoclaw-sandbox:latest"
+PLUGIN_URL="https://raw.githubusercontent.com/qwibitai/nanoclaw/main/sandbox/docker-plugin"
 
 echo ""
 echo "=== NanoClaw Docker Sandbox Setup ==="
@@ -35,15 +36,23 @@ if docker sandbox ls --format "{{.Name}}" 2>/dev/null | grep -q "^${SANDBOX_NAME
   docker sandbox rm "$SANDBOX_NAME"
 fi
 
-# ── Create sandbox from template ──────────────────────────────────
+# ── Download plugin files ──────────────────────────────────────────
 mkdir -p "$WORKSPACE"
-echo "Creating sandbox (pulls image on first run)..."
-docker sandbox create -t "$TEMPLATE" shell "$WORKSPACE"
+PLUGIN_DIR="${WORKSPACE}/docker-plugin"
+mkdir -p "$PLUGIN_DIR"
 
-# ── Configure proxy bypass for WhatsApp ────────────────────────────
-docker sandbox network proxy "$SANDBOX_NAME" \
-  --bypass-host "*.whatsapp.com" \
-  --bypass-host "*.whatsapp.net" 2>/dev/null || true
+if [ -f "$(dirname "$0" 2>/dev/null)/docker-plugin/manifest.json" ] 2>/dev/null; then
+  cp "$(dirname "$0")/docker-plugin/manifest.json" "$PLUGIN_DIR/"
+  cp "$(dirname "$0")/docker-plugin/network.json" "$PLUGIN_DIR/"
+else
+  echo "Downloading plugin files..."
+  curl -fsSL "${PLUGIN_URL}/manifest.json" -o "$PLUGIN_DIR/manifest.json"
+  curl -fsSL "${PLUGIN_URL}/network.json" -o "$PLUGIN_DIR/network.json"
+fi
+
+# ── Create sandbox from template with plugin ───────────────────────
+echo "Creating sandbox (pulls image on first run)..."
+docker sandbox create -t "$TEMPLATE" --plugin "$PLUGIN_DIR" shell "$WORKSPACE"
 
 echo ""
 echo "========================================="
