@@ -179,7 +179,8 @@ jobs:
                 'npm run build && npm test',
                 'git push',
                 '```',
-              ].join('\n'),
+              ].join('
+'),
               labels: ['upstream-sync']
             });
 
@@ -203,7 +204,8 @@ jobs:
                 ''
               ]).flat(),
               '```',
-            ].join('\n');
+            ].join('
+');
 
             await github.rest.issues.create({
               owner: context.repo.owner,
