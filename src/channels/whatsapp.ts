@@ -24,7 +24,9 @@ const proxyUrl =
   process.env.HTTP_PROXY;
 const waProxyAgent = proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined;
 // undici ProxyAgent for native fetch (used by downloadMediaMessage)
-const fetchDispatcher = proxyUrl ? new ProxyAgent({ uri: proxyUrl }) : undefined;
+const fetchDispatcher = proxyUrl
+  ? new ProxyAgent({ uri: proxyUrl })
+  : undefined;
 
 /**
  * Fetch the latest WhatsApp Web client revision from sw.js via the proxy.
