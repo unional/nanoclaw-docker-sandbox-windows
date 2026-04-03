@@ -19,6 +19,7 @@ import {
   ONECLI_URL,
   POLL_INTERVAL,
   TIMEZONE,
+  TRIGGER_PATTERN,
 } from './config.js';
 import './channels/index.js';
 import {
