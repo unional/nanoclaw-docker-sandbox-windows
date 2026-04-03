@@ -81,7 +81,9 @@ Run `npx tsx setup/index.ts --step timezone` and parse the status block.
 
 ### 3a. Choose runtime
 
-Check the preflight results for `APPLE_CONTAINER` and `DOCKER`, and the PLATFORM from step 1.
+**If IS_SANDBOX=true:** Docker is the only runtime (DinD inside sandbox). Skip the runtime question and go directly to 3a-docker.
+
+**If IS_SANDBOX=false:** Check the preflight results for `APPLE_CONTAINER` and `DOCKER`, and the PLATFORM from step 1.
 
 - PLATFORM=linux → Docker (only option)
 - PLATFORM=macos + APPLE_CONTAINER=installed → AskUserQuestion with two options:
@@ -127,6 +129,21 @@ Run `npx tsx setup/index.ts --step container -- --runtime <chosen>` and parse th
 The credential system depends on the container runtime chosen in step 3.
 
 ### 4a. Docker → OneCLI
+
+**If IS_SANDBOX=true from step 2:**
+
+AskUserQuestion: "How do you want to authenticate with Claude?"
+- **Docker Desktop managed (recommended):** Your API key is configured in Docker Desktop settings and the sandbox proxy injects it automatically. No key needed in NanoClaw.
+- **Anthropic API key:** You have your own API key.
+- **Claude subscription (Pro/Max):** You have a Claude Pro or Max subscription.
+
+**Docker Desktop managed:** Write `ANTHROPIC_API_KEY=proxy-managed` and `ASSISTANT_NAME=nanoclaw` to `.env`. Also copy `.env` to `data/env/env` (`mkdir -p data/env && cp .env data/env/env`).
+
+**API key (sandbox):** AskUserQuestion for the key. Write `ANTHROPIC_API_KEY=<key>` and `ASSISTANT_NAME=nanoclaw` to `.env`. Copy to `data/env/env`.
+
+**Subscription (sandbox):** Tell user to run `claude setup-token` in another terminal, copy the token, add `CLAUDE_CODE_OAUTH_TOKEN=<token>` to `.env`. Copy to `data/env/env`.
+
+**If IS_SANDBOX=false (normal setup):**
 
 Install OneCLI and its CLI tool:
 
@@ -263,6 +280,10 @@ AskUserQuestion: Agent access to external directories?
 **Yes:** Collect paths/permissions. `npx tsx setup/index.ts --step mounts -- --json '{"allowedRoots":[...],"blockedPatterns":[],"nonMainReadOnly":true}'`
 
 ## 7. Start Service
+
+**If IS_SANDBOX=true:** Skip the service step entirely. Tell the user: "In a Docker Sandbox, NanoClaw runs in the foreground. After setup is complete, run `npm start` to start NanoClaw. Use Ctrl+C to stop." Then skip to step 8.
+
+**If IS_SANDBOX=false (normal setup):**
 
 If service already running: unload first.
 - macOS: `launchctl unload ~/Library/LaunchAgents/com.nanoclaw.plist`

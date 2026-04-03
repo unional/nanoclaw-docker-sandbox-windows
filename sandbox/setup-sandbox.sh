@@ -9,8 +9,7 @@
 set -euo pipefail
 
 WORKSPACE="${HOME}/nanoclaw-workspace"
-SANDBOX_NAME="shell-nanoclaw-workspace"
-TEMPLATE="gabinanoclaw/nanoclaw-sandbox:latest"
+SANDBOX_NAME="claude-nanoclaw-workspace"
 REPO_URL="https://github.com/qwibitai/nanoclaw.git"
 
 echo ""
@@ -26,7 +25,7 @@ fi
 
 if ! docker sandbox version &>/dev/null; then
   echo "ERROR: Docker sandbox not available."
-  echo "Update Docker Desktop to 4.40+ and enable sandbox support."
+  echo "Update Docker Desktop 4.40+ and enable sandbox support."
   exit 1
 fi
 
@@ -46,11 +45,17 @@ else
   git clone "$REPO_URL" "${WORKSPACE}/nanoclaw"
 fi
 
-PLUGIN_DIR="${WORKSPACE}/nanoclaw/sandbox/docker-plugin"
+# ── Create sandbox using Claude agent type ─────────────────────────
+echo "Creating sandbox..."
+docker sandbox create claude "$WORKSPACE"
 
-# ── Create sandbox from template with plugin ───────────────────────
-echo "Creating sandbox (pulls image on first run)..."
-docker sandbox create -t "$TEMPLATE" --plugin "$PLUGIN_DIR" shell "$WORKSPACE"
+# ── Configure proxy bypass for WhatsApp + Telegram ─────────────────
+echo "Configuring network bypass..."
+docker sandbox network proxy "$SANDBOX_NAME" \
+  --bypass-host "api.telegram.org" \
+  --bypass-host "*.telegram.org" \
+  --bypass-host "*.whatsapp.com" \
+  --bypass-host "*.whatsapp.net"
 
 echo ""
 echo "========================================="

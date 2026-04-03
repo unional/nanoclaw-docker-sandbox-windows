@@ -204,11 +204,9 @@ async function create(parsed: SandboxArgs): Promise<void> {
     return;
   }
 
-  // Create sandbox with network bypass plugin
+  // Create sandbox
   const templateArgs = template ? `-t ${template} ` : '';
-  const pluginDir = path.join(workspace, 'nanoclaw', 'sandbox', 'docker-plugin');
-  const pluginArgs = fs.existsSync(pluginDir) ? `--plugin ${JSON.stringify(pluginDir)} ` : '';
-  const cmd = `docker sandbox create ${templateArgs}${pluginArgs}shell ${JSON.stringify(workspace)}`;
+  const cmd = `docker sandbox create ${templateArgs}shell ${JSON.stringify(workspace)}`;
 
   try {
     execSync(cmd, {

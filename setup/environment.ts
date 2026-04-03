@@ -3,6 +3,7 @@
  * Replaces 01-check-environment.sh
  */
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 
 import Database from 'better-sqlite3';
@@ -20,6 +21,11 @@ export async function run(_args: string[]): Promise<void> {
   const platform = getPlatform();
   const wsl = isWSL();
   const headless = isHeadless();
+
+  // Detect Docker Sandbox environment
+  const isSandbox =
+    fs.existsSync(path.join(os.homedir(), '.nanoclaw-workspace')) ||
+    (process.env.http_proxy?.includes('host.docker.internal') ?? false);
 
   // Check Apple Container
   let appleContainer: 'installed' | 'not_found' = 'not_found';
@@ -70,6 +76,7 @@ export async function run(_args: string[]): Promise<void> {
     {
       platform,
       wsl,
+      isSandbox,
       appleContainer,
       docker,
       hasEnv,
@@ -83,6 +90,7 @@ export async function run(_args: string[]): Promise<void> {
     PLATFORM: platform,
     IS_WSL: wsl,
     IS_HEADLESS: headless,
+    IS_SANDBOX: isSandbox,
     APPLE_CONTAINER: appleContainer,
     DOCKER: docker,
     HAS_ENV: hasEnv,
