@@ -17,7 +17,6 @@ const STEPS: Record<
   mounts: () => import('./mounts.js'),
   service: () => import('./service.js'),
   verify: () => import('./verify.js'),
-  sandbox: () => import('./sandbox.js'),
 };
 
 async function main(): Promise<void> {

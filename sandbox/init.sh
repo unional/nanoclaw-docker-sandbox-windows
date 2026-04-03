@@ -42,6 +42,7 @@ for f in container/build.sh setup.sh; do
   fi
 done
 npm install 2>&1 | tail -1
+npm install https-proxy-agent 2>&1 | tail -1
 echo "  done"
 
 # ── 3. Build NanoClaw + agent container ─────────────────────────
