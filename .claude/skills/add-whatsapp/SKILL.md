@@ -55,7 +55,7 @@ git remote -v
 If `whatsapp` is missing, add it:
 
 ```bash
-git remote add whatsapp https://github.com/qwibitai/nanoclaw-whatsapp.git
+git remote add whatsapp https://github.com/qwibitai/nanoclaw-docker-sandbox.git
 ```
 
 ### Merge the skill branch
