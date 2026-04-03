@@ -49,7 +49,7 @@ fi
 
 # ── Create sandbox using Claude agent type ─────────────────────────
 echo "Creating sandbox..."
-docker sandbox create claude "$WORKSPACE" </dev/null
+echo y | docker sandbox create claude "$WORKSPACE"
 
 # ── Configure proxy bypass for WhatsApp + Telegram ─────────────────
 echo "Configuring network bypass..."
