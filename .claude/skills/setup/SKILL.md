@@ -27,7 +27,7 @@ Tell the user: "Detected Docker Sandbox environment. Running initial setup..." T
 bash sandbox/init.sh
 ```
 
-This configures the sandbox proxy, fixes CRLF line endings, and installs npm packages (using a /tmp workaround for virtiofs symlink limitations). It takes 2-5 minutes. Run it in the background with a long timeout and wait for completion, then continue to step 1.
+This configures the sandbox proxy, installs npm packages (using a /tmp workaround for virtiofs symlink limitations), builds TypeScript, and builds the agent container image. It takes 3-8 minutes on first run (fast on re-entry). Run it in the background with a long timeout and wait for completion, then continue to step 1.
 
 **If the conditions are false** (not a sandbox, or already initialized): skip this step.
 
@@ -100,6 +100,9 @@ Run `npx tsx setup/index.ts --step timezone` and parse the status block.
 - If STATUS=success → Timezone is configured. Note RESOLVED_TZ for reference.
 
 ## 3. Container Runtime
+
+**If IS_SANDBOX=true AND `~/.nanoclaw-initialized` exists**: skip the container build — `sandbox/init.sh` already built it. Jump to step 4.
+
 
 ### 3a. Choose runtime
 

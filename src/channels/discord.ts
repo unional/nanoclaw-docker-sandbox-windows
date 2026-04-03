@@ -54,7 +54,7 @@ export class DiscordChannel implements Channel {
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.DirectMessages,
       ],
-      ...(discordProxyAgent ? { rest: { agent: discordProxyAgent } } : {}),
+      ...(discordProxyAgent ? { rest: { agent: discordProxyAgent as never } } : {}),
     });
 
     this.client.on(Events.MessageCreate, async (message: Message) => {

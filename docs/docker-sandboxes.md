@@ -276,7 +276,12 @@ Apply both skills, patch both for proxy support, combine the `.env` variables, a
 ## Step 7: Run
 
 ```bash
+# On each sandbox entry:
+bash sandbox/init.sh    # installs deps, builds TypeScript + container image (~3-8 min first time, fast on re-entry)
 npm start
+
+# Or use the start script (handles init + start in one command):
+bash sandbox/start.sh
 ```
 
 You don't need to set `ANTHROPIC_API_KEY` manually. The sandbox proxy intercepts requests and replaces `proxy-managed` with your real key automatically.
