@@ -108,7 +108,8 @@ export function getNodePath(): string {
 
 export function commandExists(name: string): boolean {
   try {
-    execSync(`command -v ${name}`, { stdio: 'ignore' });
+    const cmd = process.platform === 'win32' ? `where ${name}` : `command -v ${name}`;
+    execSync(cmd, { stdio: 'ignore' });
     return true;
   } catch {
     return false;

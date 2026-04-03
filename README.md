@@ -57,11 +57,18 @@ Then run:
 curl -fsSL https://raw.githubusercontent.com/qwibitai/nanoclaw/main/sandbox/setup-sandbox.sh | bash
 ```
 
-When the script finishes, enter the sandbox and start setup:
+When the script finishes, enter the sandbox and initialize:
 
 ```bash
 docker sandbox run shell-nanoclaw-workspace
-cd <workspace>/nanoclaw
+# Inside the sandbox:
+bash $(df -h | grep virtiofs | awk '{print $NF}')/nanoclaw/sandbox/init.sh
+```
+
+Then start Claude Code and run `/setup`:
+
+```bash
+cd $(cat ~/.nanoclaw-workspace)/nanoclaw
 claude
 /setup
 ```

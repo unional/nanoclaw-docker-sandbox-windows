@@ -11,7 +11,7 @@ set -euo pipefail
 WORKSPACE="${HOME}/nanoclaw-workspace"
 SANDBOX_NAME="shell-nanoclaw-workspace"
 TEMPLATE="gabinanoclaw/nanoclaw-sandbox:latest"
-PLUGIN_URL="https://raw.githubusercontent.com/qwibitai/nanoclaw/main/sandbox/docker-plugin"
+REPO_URL="https://github.com/qwibitai/nanoclaw.git"
 
 echo ""
 echo "=== NanoClaw Docker Sandbox Setup ==="
@@ -36,19 +36,17 @@ if docker sandbox ls --format "{{.Name}}" 2>/dev/null | grep -q "^${SANDBOX_NAME
   docker sandbox rm "$SANDBOX_NAME"
 fi
 
-# ── Download plugin files ──────────────────────────────────────────
+# ── Clone NanoClaw on host ─────────────────────────────────────────
 mkdir -p "$WORKSPACE"
-PLUGIN_DIR="${WORKSPACE}/docker-plugin"
-mkdir -p "$PLUGIN_DIR"
 
-if [ -f "$(dirname "$0" 2>/dev/null)/docker-plugin/manifest.json" ] 2>/dev/null; then
-  cp "$(dirname "$0")/docker-plugin/manifest.json" "$PLUGIN_DIR/"
-  cp "$(dirname "$0")/docker-plugin/network.json" "$PLUGIN_DIR/"
+if [ -f "${WORKSPACE}/nanoclaw/package.json" ]; then
+  echo "NanoClaw already cloned."
 else
-  echo "Downloading plugin files..."
-  curl -fsSL "${PLUGIN_URL}/manifest.json" -o "$PLUGIN_DIR/manifest.json"
-  curl -fsSL "${PLUGIN_URL}/network.json" -o "$PLUGIN_DIR/network.json"
+  echo "Cloning NanoClaw..."
+  git clone "$REPO_URL" "${WORKSPACE}/nanoclaw"
 fi
+
+PLUGIN_DIR="${WORKSPACE}/nanoclaw/sandbox/docker-plugin"
 
 # ── Create sandbox from template with plugin ───────────────────────
 echo "Creating sandbox (pulls image on first run)..."
@@ -63,6 +61,9 @@ echo "Now run:"
 echo ""
 echo "  docker sandbox run ${SANDBOX_NAME}"
 echo ""
-echo "Auto-setup runs on first login (~3-5 min)."
+echo "Then inside the sandbox:"
+echo ""
+echo "  bash \$(df -h | grep virtiofs | awk '{print \$NF}')/nanoclaw/sandbox/init.sh"
+echo ""
 echo "When done: claude  then  /setup"
 echo ""
