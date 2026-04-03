@@ -3,6 +3,12 @@
 
 FROM node:22-slim
 
+# Accept proxy build args and configure npm to work through MITM proxies
+ARG http_proxy
+ARG https_proxy
+ARG no_proxy
+ARG NODE_EXTRA_CA_CERTS
+
 # Install system dependencies for Chromium
 RUN apt-get update && apt-get install -y \
     chromium \
@@ -30,10 +36,9 @@ RUN apt-get update && apt-get install -y \
 ENV AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 
-# Sandbox: proxy build args for npm through MITM proxy
-ARG http_proxy
-ARG https_proxy
-RUN npm config set strict-ssl false
+# Disable strict SSL during build when setup passes npm_config_strict_ssl=false (MITM proxies)
+ARG npm_config_strict_ssl=true
+RUN npm config set strict-ssl ${npm_config_strict_ssl}
 
 # Install agent-browser and claude-code globally
 RUN npm install -g agent-browser @anthropic-ai/claude-code
@@ -46,6 +51,9 @@ COPY agent-runner/package*.json ./
 
 # Install dependencies
 RUN npm install
+
+# Re-enable strict SSL for runtime
+RUN npm config set strict-ssl true
 
 # Copy source code
 COPY agent-runner/ ./

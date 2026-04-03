@@ -13,7 +13,6 @@ import {
   DATA_DIR,
   GROUPS_DIR,
   IDLE_TIMEOUT,
-  IS_SANDBOX,
   ONECLI_URL,
   TIMEZONE,
 } from './config.js';
@@ -262,6 +261,47 @@ async function buildContainerArgs(
       { containerName },
       'OneCLI gateway not reachable — container will have no credentials',
     );
+  }
+
+  // Forward proxy and corporate CA into the container (sandbox / MITM / VPN builds).
+  const caCertEnvVars = [
+    'NODE_EXTRA_CA_CERTS',
+    'SSL_CERT_FILE',
+    'REQUESTS_CA_BUNDLE',
+  ];
+  for (const envVar of [
+    'HTTP_PROXY',
+    'HTTPS_PROXY',
+    'NO_PROXY',
+    'http_proxy',
+    'https_proxy',
+    'no_proxy',
+    ...caCertEnvVars,
+  ]) {
+    if (!process.env[envVar]) continue;
+    if (caCertEnvVars.includes(envVar)) {
+      args.push('-e', `${envVar}=/workspace/ca-cert/proxy-ca.crt`);
+    } else if (envVar === 'NO_PROXY' || envVar === 'no_proxy') {
+      const val = process.env[envVar];
+      const extra = val ? `${val},host.docker.internal` : 'host.docker.internal';
+      args.push('-e', `${envVar}=${extra}`);
+    } else {
+      args.push('-e', `${envVar}=${process.env[envVar]}`);
+    }
+  }
+
+  const hostCaCert =
+    process.env.NODE_EXTRA_CA_CERTS || process.env.SSL_CERT_FILE;
+  if (hostCaCert && fs.existsSync(hostCaCert)) {
+    const caCertDir = path.join(DATA_DIR, 'ca-cert');
+    const caCertDst = path.join(caCertDir, 'proxy-ca.crt');
+    fs.mkdirSync(caCertDir, { recursive: true });
+    fs.copyFileSync(hostCaCert, caCertDst);
+    mounts.push({
+      hostPath: caCertDir,
+      containerPath: '/workspace/ca-cert',
+      readonly: true,
+    });
   }
 
   // Runtime-specific args for host gateway resolution

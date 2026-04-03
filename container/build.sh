@@ -13,12 +13,15 @@ CONTAINER_RUNTIME="${CONTAINER_RUNTIME:-docker}"
 echo "Building NanoClaw agent container image..."
 echo "Image: ${IMAGE_NAME}:${TAG}"
 
-# Forward proxy env vars for sandbox builds
-BUILD_ARGS=""
-[ -n "${http_proxy:-}" ] && BUILD_ARGS="$BUILD_ARGS --build-arg http_proxy=$http_proxy"
-[ -n "${https_proxy:-}" ] && BUILD_ARGS="$BUILD_ARGS --build-arg https_proxy=$https_proxy"
+# Inherit proxy settings for sandboxed / corporate environments
+PROXY_ARGS=""
+for var in http_proxy https_proxy no_proxy HTTP_PROXY HTTPS_PROXY NO_PROXY; do
+  if [ -n "${!var}" ]; then
+    PROXY_ARGS="$PROXY_ARGS --build-arg $var=${!var}"
+  fi
+done
 
-${CONTAINER_RUNTIME} build ${BUILD_ARGS} -t "${IMAGE_NAME}:${TAG}" .
+${CONTAINER_RUNTIME} build $PROXY_ARGS -t "${IMAGE_NAME}:${TAG}" .
 
 echo ""
 echo "Build complete!"
