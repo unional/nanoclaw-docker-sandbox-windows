@@ -11,7 +11,7 @@ import {
 import { ProxyAgent } from 'undici';
 
 import { ASSISTANT_NAME, GROUPS_DIR, TRIGGER_PATTERN } from '../config.js';
-import { readEnvFile } from '../env.js';
+import { readEnvFile, readEnvFileByPrefix } from '../env.js';
 import { logger } from '../logger.js';
 import { registerChannel, ChannelOpts } from './registry.js';
 
@@ -38,15 +38,31 @@ export interface DiscordChannelOpts {
 }
 
 export class DiscordChannel implements Channel {
-  name = 'discord';
+  name: string;
 
   private client: Client | null = null;
   private opts: DiscordChannelOpts;
   private botToken: string;
+  private botName: string;
 
-  constructor(botToken: string, opts: DiscordChannelOpts) {
+  constructor(botName: string, botToken: string, opts: DiscordChannelOpts) {
+    this.botName = botName;
     this.botToken = botToken;
     this.opts = opts;
+    this.name = botName === 'default' ? 'discord' : `discord_${botName}`;
+  }
+
+  private makeJid(channelId: string): string {
+    return this.botName === 'default'
+      ? `dc:${channelId}`
+      : `dc:${this.botName}:${channelId}`;
+  }
+
+  private extractChannelId(jid: string): string {
+    // dc:channelId  →  channelId
+    // dc:botName:channelId  →  channelId
+    const parts = jid.slice(3).split(':');
+    return parts[parts.length - 1];
   }
 
   async connect(): Promise<void> {
@@ -67,7 +83,7 @@ export class DiscordChannel implements Channel {
       if (message.author.bot) return;
 
       const channelId = message.channelId;
-      const chatJid = `dc:${channelId}`;
+      const chatJid = this.makeJid(channelId);
       let content = message.content;
       const timestamp = message.createdAt.toISOString();
       const senderName =
@@ -198,9 +214,15 @@ export class DiscordChannel implements Channel {
           const sizeKB = Math.round(buffer.length / 1024);
           const pdfRef = `[PDF: attachments/${filename} (${sizeKB}KB)]\nUse: pdf-reader extract attachments/${filename}`;
           content = content ? `${content}\n${pdfRef}` : pdfRef;
-          logger.info({ jid: chatJid, filename }, 'Downloaded Discord PDF attachment');
+          logger.info(
+            { jid: chatJid, filename },
+            'Downloaded Discord PDF attachment',
+          );
         } catch (err) {
-          logger.warn({ err, jid: chatJid }, 'Failed to download Discord PDF attachment');
+          logger.warn(
+            { err, jid: chatJid },
+            'Failed to download Discord PDF attachment',
+          );
         }
       }
 
@@ -250,7 +272,7 @@ export class DiscordChannel implements Channel {
     }
 
     try {
-      const channelId = jid.replace(/^dc:/, '');
+      const channelId = this.extractChannelId(jid);
       const channel = await this.client.channels.fetch(channelId);
 
       if (!channel || !('send' in channel)) {
@@ -280,7 +302,13 @@ export class DiscordChannel implements Channel {
   }
 
   ownsJid(jid: string): boolean {
-    return jid.startsWith('dc:');
+    if (!jid.startsWith('dc:')) return false;
+    const rest = jid.slice(3);
+    if (this.botName === 'default') {
+      // Claim legacy numeric JIDs (no colon = no botName segment)
+      return !rest.includes(':');
+    }
+    return rest.startsWith(`${this.botName}:`);
   }
 
   async disconnect(): Promise<void> {
@@ -294,7 +322,7 @@ export class DiscordChannel implements Channel {
   async setTyping(jid: string, isTyping: boolean): Promise<void> {
     if (!this.client || !isTyping) return;
     try {
-      const channelId = jid.replace(/^dc:/, '');
+      const channelId = this.extractChannelId(jid);
       const channel = await this.client.channels.fetch(channelId);
       if (channel && 'sendTyping' in channel) {
         await (channel as TextChannel).sendTyping();
@@ -305,13 +333,39 @@ export class DiscordChannel implements Channel {
   }
 }
 
-registerChannel('discord', (opts: ChannelOpts) => {
-  const envVars = readEnvFile(['DISCORD_BOT_TOKEN']);
-  const token =
-    process.env.DISCORD_BOT_TOKEN || envVars.DISCORD_BOT_TOKEN || '';
-  if (!token) {
-    logger.warn('Discord: DISCORD_BOT_TOKEN not set');
-    return null;
-  }
-  return new DiscordChannel(token, opts);
-});
+// Discover all configured bot tokens at module load time
+const _defaultEnv = readEnvFile(['DISCORD_BOT_TOKEN']);
+const _namedBotEnv = readEnvFileByPrefix('DISCORD_BOT_TOKEN_');
+const _allDiscordEnv: Record<string, string> = {
+  ..._defaultEnv,
+  ...(_namedBotEnv as Record<string, string>),
+};
+// process.env takes precedence over .env file
+for (const key of Object.keys(_allDiscordEnv)) {
+  if (process.env[key]) _allDiscordEnv[key] = process.env[key]!;
+}
+
+const TOKEN_PREFIX = 'DISCORD_BOT_TOKEN_';
+
+// Register default bot (backward-compatible: DISCORD_BOT_TOKEN)
+const _defaultToken = _allDiscordEnv.DISCORD_BOT_TOKEN;
+if (_defaultToken) {
+  registerChannel('discord', (opts: ChannelOpts) => {
+    return new DiscordChannel('default', _defaultToken, opts);
+  });
+}
+
+// Register named bots (DISCORD_BOT_TOKEN_<NAME>)
+for (const [key, token] of Object.entries(_allDiscordEnv)) {
+  if (!key.startsWith(TOKEN_PREFIX) || !token) continue;
+  const botName = key.slice(TOKEN_PREFIX.length).toLowerCase();
+  registerChannel(`discord_${botName}`, (opts: ChannelOpts) => {
+    return new DiscordChannel(botName, token, opts);
+  });
+}
+
+if (!_defaultToken && Object.keys(_namedBotEnv).length === 0) {
+  logger.warn(
+    'Discord: no DISCORD_BOT_TOKEN or DISCORD_BOT_TOKEN_* configured',
+  );
+}
